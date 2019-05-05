@@ -117,20 +117,16 @@ func (n *node) insert(entity Entity, maxEntities int) {
 			n.split()
 
 			// loop through all entities to add them to there appropriate child node
-			for i := 0; i < len(n.entities); {
+			for _, e := range n.entities {
 				// Find quadrant to insert entity in to
 				// Nil means it didn't fit in to any quadrant
-				if node := n.getQuadrant(n.entities[i]); node != nil {
-					// take out entity from list
-					splice := n.entities[i]
-					n.entities = append(n.entities[:i], n.entities[i+1:]...)
-
+				if node := n.getQuadrant(e); node != nil {
 					// insert entity to new child
-					node.insert(splice, maxEntities)
-				} else {
-					i++
+					node.insert(e, maxEntities)
 				}
 			}
+			// clear entities for branch node
+			n.entities = []Entity{}
 		}
 	}
 }
