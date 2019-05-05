@@ -2,5 +2,5 @@
 .DS_Store
 /.idea/*
 go.sum
-*.xml
 *.iml
+*.xml
