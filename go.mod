@@ -1,3 +1,3 @@
-module github.com/Tskken/QuadGo
+module QuadGo
 
 go 1.12
