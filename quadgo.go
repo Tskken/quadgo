@@ -2,7 +2,7 @@ package QuadGo
 
 import "errors"
 
-// constant values for child quadrant map
+// constant values for child quadrant map.
 const (
 	bottomLeft quadrant = iota
 	bottomRight
@@ -13,17 +13,18 @@ const (
 
 type quadrant byte
 
-// QuadGo - Base Quadtree data structure
+// QuadGo - Base Quadtree data structure.
 type QuadGo struct {
 	// Contains all unexported fields
 	root        *node
 	maxEntities int
 }
 
-// NewQuadGo creates the basic QuadGo data structure from
-// the given information.
-// - maxEntities: max number of Entities per node
-// - rootBounds: the max bounds of the tree
+// NewQuadGo creates the basic QuadGo data structure from the given information.
+//
+// - maxEntities: max number of Entities per node.
+//
+// - rootBounds: the max bounds of the tree.
 func NewQuadGO(maxEntities int, rootBounds Bounder) *QuadGo {
 	return &QuadGo{
 		root: &node{
@@ -35,19 +36,19 @@ func NewQuadGO(maxEntities int, rootBounds Bounder) *QuadGo {
 	}
 }
 
-// Insert inserts an Entity in to the quadtree
+// Insert inserts an Entity in to the quadtree.
 func (q *QuadGo) Insert(entity Entity) {
 	// insert in to quadtree
 	q.root.insert(entity, q.maxEntities)
 }
 
-// Retrieve retrieves all entities that are contained in all bounds the given entity fits with in
+// Retrieve retrieves all entities that are contained in all bounds the given entity fits with in.
 func (q *QuadGo) Retrieve(entity Entity) []Entity {
 	// retrieve entities for quadtree
 	return q.root.retrieve(entity)
 }
 
-// IsIntersect gets all entities with in the bounds the given entity fits in and then checks if
+// IsIntersect gets all entities within the bounds that the given entity fits within and then checks if
 // any of the entities intersect with the given entity.
 func (q *QuadGo) IsIntersect(entity Entity) bool {
 	// check all entities returned from retrieve for if they intersect
@@ -60,7 +61,7 @@ func (q *QuadGo) IsIntersect(entity Entity) bool {
 	return false
 }
 
-// Intersects returns a list of all entities the given entity intersects with
+// Intersects returns a list of all entities the given entity intersects with.
 func (q *QuadGo) Intersects(entity Entity) (entities []Entity) {
 	// check all entities returned from retrieve for if they intersect
 	for _, e := range q.Retrieve(entity) {
