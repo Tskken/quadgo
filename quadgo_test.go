@@ -63,7 +63,14 @@ func TestQuadGo_Insert(t *testing.T) {
 				t.Fail()
 			}
 		})
+
+		t.Run("Panic enter bad position test", func(t *testing.T) {
+			assertPanic(t, func(){
+				Quad.Insert(NewBounds(Quad.root.bounds.Center().X()-50, Quad.root.bounds.Center().Y() - 50, 100, 100))
+			})
+		})
 	})
+
 }
 
 func TestQuadGo_Retrieve(t *testing.T) {
@@ -123,6 +130,24 @@ func TestQuadGo_IsIntersect(t *testing.T) {
 			t.Fail()
 		}
 	})
+
+	t.Run("Intersect topLeft test", func(t *testing.T) {
+		if !Quad.IsIntersect(ToBounds(0, Quad.root.bounds.H() / 2 + 20, 20, Quad.root.bounds.H() - 20)) {
+			t.Fail()
+		}
+	})
+
+	t.Run("Intersect TopRight test", func(t *testing.T) {
+		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W() / 2 + 20, Quad.root.bounds.H() / 2 + 20, 50, 50)) {
+			t.Fail()
+		}
+	})
+
+	t.Run("Intersect BottomRight test", func(t *testing.T) {
+		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W() / 2 + 20, 0, 50, 50)) {
+			t.Fail()
+		}
+	})
 }
 
 func TestQuadGo_Intersects(t *testing.T) {
@@ -179,4 +204,13 @@ func BenchmarkQuadGo_IsIntersect(b *testing.B) {
 			b.Fail()
 		}
 	}
+}
+
+func assertPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	f()
 }
