@@ -25,7 +25,7 @@ type QuadGo struct {
 // - maxEntities: max number of Entities per node.
 //
 // - rootBounds: the max bounds of the tree.
-func NewQuadGO(maxEntities int, rootBounds Bounder) *QuadGo {
+func NewQuadGo(maxEntities int, rootBounds Bounder) *QuadGo {
 	return &QuadGo{
 		root: &node{
 			bounds:   rootBounds,
@@ -134,13 +134,11 @@ func (n *node) insert(entity Entity, maxEntities int) {
 // getQuadrant gets the node for the quadrant the given bounds fits within
 func (n *node) getQuadrant(bounds Bounder) *node {
 	// get index to quadrant the bounds fits with in
-	index := getQuadrant(n.bounds, bounds)
-	if index == none {
-		return nil
+	if index := getQuadrant(n.bounds, bounds); index != none {
+		// return child node for quadrant index
+		return n.children[index]
 	}
-
-	// return child node for quadrant index
-	return n.children[index]
+	return nil
 }
 
 // split creates the children for a node by subdividing the nodes boundaries in to 4 even quadrants
@@ -187,27 +185,19 @@ func getQuadrant(nodeBounds, entityBounds Bounder) quadrant {
 	centerX, centerY := nodeBounds.Center().XY()
 	// get the min and max coordinates for the entity bounds
 	min, max := entityBounds.Bounds()
-
-	// check if entity fits in the bottom of the node
-	bot := min.Y() < centerY && max.Y() <= centerY
-	// check if entity fits int he top of node
-	top := min.Y() > centerY
-
-	// check if entity fits in the left side of node
-	left := min.X() < centerX && max.X() <= centerX
-	// check if entity fits in the right side of node
-	right := min.X() > centerX
+	minX, minY := min.XY()
+	maxX, maxY := max.XY()
 
 	// return ware the given entity fits in node
 	// none means it couldn't fit in node
 	switch {
-	case bot && left:
+	case  (minY < centerY && maxY <= centerY) && (minX < centerX && maxX <= centerX):
 		return bottomLeft
-	case bot && right:
+	case (minY < centerY && maxY <= centerY) && (minX > centerX):
 		return bottomRight
-	case top && left:
+	case (minY > centerY) && (minX < centerX && maxX <= centerX):
 		return topLeft
-	case top && right:
+	case (minY > centerY) && (minX > centerX):
 		return topRight
 	default:
 		return none
