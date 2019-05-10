@@ -116,7 +116,7 @@ func (n *node) insert(entity Entity) {
 		}
 	} else {
 		// Check if a split is needed
-		if len(n.entities) + 1 > cap(n.entities) {
+		if len(n.entities)+1 > cap(n.entities) {
 			// create next leaf nodes
 			n.split()
 
