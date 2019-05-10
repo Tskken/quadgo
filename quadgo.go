@@ -9,13 +9,12 @@ const (
 	none
 )
 
-type quadrant byte
+type quadrant uint8
 
 // QuadGo - Base Quadtree data structure.
 type QuadGo struct {
 	// Contains all unexported fields
-	root        *node
-	maxEntities int
+	*node
 }
 
 // NewQuadGo creates the basic QuadGo data structure from the given information.
@@ -25,37 +24,36 @@ type QuadGo struct {
 // - rootBounds: the max bounds of the tree.
 func NewQuadGo(maxEntities int, rootBounds Bounder) *QuadGo {
 	return &QuadGo{
-		root: &node{
+		node: &node{
 			parent:   nil,
 			bounds:   rootBounds,
-			entities: make([]Entity, 0),
-			children: make(map[quadrant]*node),
+			entities: make([]Entity, 0, maxEntities),
+			children: make([]*node, 0, 4),
 		},
-		maxEntities: maxEntities,
 	}
 }
 
 // Insert inserts an Entity in to the quadtree.
 func (q *QuadGo) Insert(entity Entity) {
 	// insert in to quadtree
-	q.root.insert(entity, q.maxEntities)
+	q.insert(entity)
 }
 
 // Remove removes the given entity from the quadtree.
 func (q *QuadGo) Remove(entity Entity) {
 	// remove from quadtree
-	q.root.remove(entity, q.maxEntities)
+	q.remove(entity)
 }
 
 // Retrieve retrieves all entities that are contained in all bounds the given entity fits with in.
 func (q *QuadGo) Retrieve(entity Entity) []Entity {
 	// retrieve entities for quadtree
-	return q.root.retrieve(entity)
+	return q.retrieve(entity)
 }
 
 // IsEntity checks if a given entity exists in the quadtree.
 func (q *QuadGo) IsEntity(entity Entity) bool {
-	return q.root.isEntity(entity)
+	return q.isEntity(entity)
 }
 
 // IsIntersect gets all entities within the bounds that the given entity fits within and then checks if
@@ -88,7 +86,7 @@ type node struct {
 	parent   *node
 	bounds   Bounder
 	entities []Entity
-	children map[quadrant]*node
+	children []*node
 }
 
 // retrieve finds any entities that are contained in the bounding box the given entity fits in and then returns them.
@@ -108,45 +106,45 @@ func (n *node) retrieve(entity Entity) (entities []Entity) {
 }
 
 // insert inserts a given entity in to the quadtree.
-func (n *node) insert(entity Entity, maxEntities int) {
+func (n *node) insert(entity Entity) {
 	// Check if you are on a leaf node
 	if len(n.children) > 0 {
 		// IsEntity quadrant to insert in to
 		if node := n.getQuadrant(entity); node != nil {
 			// Insert in to next node
-			node.insert(entity, maxEntities)
+			node.insert(entity)
 		}
 	} else {
-		// Add entity to node
-		n.entities = append(n.entities, entity)
-
 		// Check if a split is needed
-		if len(n.entities) > maxEntities {
+		if len(n.entities) + 1 > cap(n.entities) {
 			// create next leaf nodes
 			n.split()
 
 			// loop through all entities to add them to there appropriate child node
-			for _, e := range n.entities {
+			for _, e := range append(n.entities, entity) {
 				// IsEntity quadrant to insert entity in to
 				// Nil means it didn't fit in to any quadrant
 				if node := n.getQuadrant(e); node != nil {
 					// insert entity to new child
-					node.insert(e, maxEntities)
+					node.insert(e)
 				}
 			}
 			// clear entities for branch node
-			n.entities = []Entity{}
+			n.entities = make([]Entity, 0, cap(n.entities))
+		} else {
+			// Add entity to node
+			n.entities = append(n.entities, entity)
 		}
 	}
 }
 
 // remove removes the given entity from the quadtree.
-func (n *node) remove(entity Entity, maxEntities int) {
+func (n *node) remove(entity Entity) {
 	// check if we are on a leaf node
 	if len(n.children) > 0 {
 		// not on a leaf, get next quadrant
 		if node := n.getQuadrant(entity); node != nil {
-			node.remove(entity, maxEntities)
+			node.remove(entity)
 		}
 	} else {
 		// check entities in leaf for given entity
@@ -156,9 +154,9 @@ func (n *node) remove(entity Entity, maxEntities int) {
 				// check if removal would make the leaf have no entities
 				if len(n.entities) == 1 {
 					// set node entities to nil
-					n.entities = make([]Entity, 0)
+					n.entities = make([]Entity, 0, cap(n.entities))
 
-					n.parent.collapse(maxEntities)
+					n.parent.collapse()
 				} else {
 					n.entities = append(n.entities[:i], n.entities[i+1:]...)
 				}
@@ -170,18 +168,18 @@ func (n *node) remove(entity Entity, maxEntities int) {
 // collapse checks if a parent's children hold less entities then the set maxEntities count.
 // if the count is less then maxEntities it collapses all children in to the parent node, copying
 // all of there entities to the parent node and setting the children to nil.
-func (n *node) collapse(maxEntities int) {
+func (n *node) collapse() {
 	eCount := 0
 	for _, c := range n.children {
 		eCount += len(c.entities)
 	}
 
-	if eCount < maxEntities {
+	if eCount < cap(n.entities) {
 		for _, c := range n.children {
 			n.entities = append(n.entities, c.entities...)
 		}
 
-		n.children = make(map[quadrant]*node)
+		n.children = make([]*node, 0, 4)
 	}
 }
 
@@ -216,36 +214,36 @@ func (n *node) split() {
 	x, y := n.bounds.Min()
 
 	// Bottom Left child node
-	n.children[bottomLeft] = &node{
+	n.children = append(n.children, &node{
 		parent:   n,
 		bounds:   NewBounds(x, y, subWidth, subHeight),
-		entities: make([]Entity, 0),
-		children: make(map[quadrant]*node),
-	}
+		entities: make([]Entity, 0, cap(n.entities)),
+		children: make([]*node, 0, 4),
+	})
 
 	// Bottom Right child node
-	n.children[bottomRight] = &node{
+	n.children = append(n.children, &node{
 		parent:   n,
 		bounds:   NewBounds(x+subWidth, y, subWidth, subHeight),
-		entities: make([]Entity, 0),
-		children: make(map[quadrant]*node),
-	}
+		entities: make([]Entity, 0, cap(n.entities)),
+		children: make([]*node, 0, 4),
+	})
 
 	// Top Left child node
-	n.children[topLeft] = &node{
+	n.children = append(n.children, &node{
 		parent:   n,
 		bounds:   NewBounds(x, y+subHeight, subWidth, subHeight),
-		entities: make([]Entity, 0),
-		children: make(map[quadrant]*node),
-	}
+		entities: make([]Entity, 0, cap(n.entities)),
+		children: make([]*node, 0, 4),
+	})
 
 	// Top Right child node
-	n.children[topRight] = &node{
+	n.children = append(n.children, &node{
 		parent:   n,
 		bounds:   NewBounds(x+subWidth, y+subHeight, subWidth, subHeight),
-		entities: make([]Entity, 0),
-		children: make(map[quadrant]*node),
-	}
+		entities: make([]Entity, 0, cap(n.entities)),
+		children: make([]*node, 0, 4),
+	})
 }
 
 // getQuadrant returns the quadrant ware the given entityBounds fits with in the given nodeBounds.
@@ -258,11 +256,11 @@ func getQuadrant(nodeBounds, entityBounds Bounder) quadrant {
 	// return ware the given entity fits in node
 	// none means it couldn't fit in node
 	switch {
-	case (minY < centerY && maxY <= centerY) && (minX < centerX && maxX <= centerX):
+	case (minY < centerY && maxY < centerY) && (minX < centerX && maxX < centerX):
 		return bottomLeft
-	case (minY < centerY && maxY <= centerY) && (minX > centerX):
+	case (minY < centerY && maxY < centerY) && (minX > centerX):
 		return bottomRight
-	case (minY > centerY) && (minX < centerX && maxX <= centerX):
+	case (minY > centerY) && (minX < centerX && maxX < centerX):
 		return topLeft
 	case (minY > centerY) && (minX > centerX):
 		return topRight

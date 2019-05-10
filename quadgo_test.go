@@ -15,7 +15,7 @@ func TestQuadGo_Insert(t *testing.T) {
 
 		entity := NewBounds(10, 10, 50, 50)
 		Quad.Insert(entity)
-		if Quad.root.entities[0] != entity {
+		if Quad.entities[0] != entity {
 			t.Fail()
 		}
 	})
@@ -25,9 +25,9 @@ func TestQuadGo_Insert(t *testing.T) {
 
 		entities := []Entity{
 			NewBounds(0, 0, 50, 50),
-			NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+			NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+			NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+			NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 		}
 
 		for _, e := range entities {
@@ -35,31 +35,31 @@ func TestQuadGo_Insert(t *testing.T) {
 		}
 
 		t.Run("Split failed tests", func(t *testing.T) {
-			if len(Quad.root.children) == 0 {
+			if len(Quad.children) == 0 {
 				t.Fail()
 			}
 		})
 
 		t.Run("Bottom Left entity filled test", func(t *testing.T) {
-			if len(Quad.root.children[bottomLeft].entities) == 0 || Quad.root.children[bottomLeft].entities[0] != entities[0] {
+			if len(Quad.children[bottomLeft].entities) == 0 || Quad.children[bottomLeft].entities[0] != entities[0] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Bottom Right entity filled test", func(t *testing.T) {
-			if len(Quad.root.children[bottomRight].entities) == 0 || Quad.root.children[bottomRight].entities[0] != entities[2] {
+			if len(Quad.children[bottomRight].entities) == 0 || Quad.children[bottomRight].entities[0] != entities[2] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Top Left entity filled test", func(t *testing.T) {
-			if len(Quad.root.children[topLeft].entities) == 0 || Quad.root.children[topLeft].entities[0] != entities[1] {
+			if len(Quad.children[topLeft].entities) == 0 || Quad.children[topLeft].entities[0] != entities[1] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Top Right entity filled test", func(t *testing.T) {
-			if len(Quad.root.children[topRight].entities) == 0 || Quad.root.children[topRight].entities[0] != entities[3] {
+			if len(Quad.children[topRight].entities) == 0 || Quad.children[topRight].entities[0] != entities[3] {
 				t.Fail()
 			}
 		})
@@ -72,9 +72,9 @@ func TestQuadGo_Remove(t *testing.T) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 		NewBounds(25, 25, 25, 25),
 		NewBounds(50, 50, 50, 50),
 		NewBounds(75, 75, 25, 25),
@@ -102,9 +102,9 @@ func TestQuadGo_Retrieve(t *testing.T) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 	}
 
 	for _, e := range entities {
@@ -134,9 +134,9 @@ func TestQuadGo_Find(t *testing.T) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 	}
 
 	for _, e := range entities {
@@ -155,9 +155,9 @@ func TestQuadGo_IsIntersect(t *testing.T) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 	}
 
 	for _, e := range entities {
@@ -177,19 +177,19 @@ func TestQuadGo_IsIntersect(t *testing.T) {
 	})
 
 	t.Run("Intersect topLeft test", func(t *testing.T) {
-		if !Quad.IsIntersect(ToBounds(0, Quad.root.bounds.H()/2+20, 20, Quad.root.bounds.H()-20)) {
+		if !Quad.IsIntersect(ToBounds(0, Quad.bounds.H()/2+20, 20, Quad.bounds.H()-20)) {
 			t.Fail()
 		}
 	})
 
 	t.Run("Intersect TopRight test", func(t *testing.T) {
-		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W()/2+20, Quad.root.bounds.H()/2+20, 50, 50)) {
+		if !Quad.IsIntersect(NewBounds(Quad.bounds.W()/2+20, Quad.bounds.H()/2+20, 50, 50)) {
 			t.Fail()
 		}
 	})
 
 	t.Run("Intersect BottomRight test", func(t *testing.T) {
-		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W()/2+20, 0, 50, 50)) {
+		if !Quad.IsIntersect(NewBounds(Quad.bounds.W()/2+20, 0, 50, 50)) {
 			t.Fail()
 		}
 	})
@@ -200,9 +200,9 @@ func TestQuadGo_Intersects(t *testing.T) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 	}
 
 	for _, e := range entities {
@@ -221,16 +221,15 @@ func BenchmarkNewQuadGo(b *testing.B) {
 }
 
 func BenchmarkQuadGo_Insert(b *testing.B) {
+	Quad = NewQuadGo(1, RootBounds)
+
+	entities := []Entity{
+		NewBounds(0, 0, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
+	}
 	for n := 0; n < b.N; n++ {
-		Quad = NewQuadGo(1, RootBounds)
-
-		entities := []Entity{
-			NewBounds(0, 0, 50, 50),
-			NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
-		}
-
 		for _, e := range entities {
 			Quad.Insert(e)
 		}
@@ -242,9 +241,9 @@ func BenchmarkQuadGo_IsIntersect(b *testing.B) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 		NewBounds(150, 40, 300, 40),
 		NewBounds(34, 65, 234, 680),
 	}
@@ -267,9 +266,9 @@ func BenchmarkQuadGo_Find(b *testing.B) {
 
 	entities := []Entity{
 		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
 	}
 
 	for _, e := range entities {
@@ -284,26 +283,25 @@ func BenchmarkQuadGo_Find(b *testing.B) {
 }
 
 func BenchmarkQuadGo_Remove(b *testing.B) {
+	Quad = NewQuadGo(5, RootBounds)
+
+	entities := []Entity{
+		NewBounds(0, 0, 50, 50),
+		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
+		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(25, 25, 25, 25),
+		NewBounds(50, 50, 50, 50),
+		NewBounds(75, 75, 25, 25),
+		NewBounds(10, 10, 35, 35),
+		NewBounds(15, 15, 15, 15),
+		NewBounds(150, 150, 200, 200),
+	}
+
+	for _, e := range entities {
+		Quad.Insert(e)
+	}
 	for n := 0; n < b.N; n++ {
-		Quad = NewQuadGo(5, RootBounds)
-
-		entities := []Entity{
-			NewBounds(0, 0, 50, 50),
-			NewBounds(0, Quad.root.bounds.H()/2+50, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, 0, 50, 50),
-			NewBounds(Quad.root.bounds.W()/2+50, Quad.root.bounds.H()/2+50, 50, 50),
-			NewBounds(25, 25, 25, 25),
-			NewBounds(50, 50, 50, 50),
-			NewBounds(75, 75, 25, 25),
-			NewBounds(10, 10, 35, 35),
-			NewBounds(15, 15, 15, 15),
-			NewBounds(150, 150, 200, 200),
-		}
-
-		for _, e := range entities {
-			Quad.Insert(e)
-		}
-
 		Quad.Remove(entities[6])
 	}
 }
