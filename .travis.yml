@@ -1,12 +1,27 @@
+dist: xenial
+
 language: go
 
+env:
+    - GO111MODULE=on
+    - GOFLAGS='-mod vendor'
+
 go:
-  - 1.14.x
-  - master
+  - 1.12.x
+
+git:
+  depth: 1
 
 install:
-  - go get -t ./..
+  - go get ./..
+
+notifications:
+  email: false
+
+before_script:
+  - go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
 script:
-  - go test -v ./..
-  - go test -v -bench ./..
+  - golangci-lint run
+  - go test -i ./..
+  - go test -i -bench ./..
