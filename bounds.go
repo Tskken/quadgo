@@ -8,64 +8,48 @@ import (
 // Bounds is the basic entity and bounds structure for QuadGo.
 //
 // QuadGo provides a very basic bounds and entity structure for basic collision detection.
-// You can creat your own entity and bounds by implementing the Bounder, Pointer, and Entity interfaces.
+// You can creat your own entity and bounds by implementing the Bounder and Entity interfaces.
 type Bounds struct {
 	// Contains unexported fields
-	min    Pointer
-	max    Pointer
-	width  float64
-	height float64
+	minX, minY float64
+	maxX, maxY float64
+	width, height float64
 }
 
 // NewBounds creates a new Bounds struct from the given min x y coordinate and the width and height.
 //
 // Note: QuadGo minX and minY points are the bottom left point of the bounding rectangle.
-func NewBounds(minX, minY, width, height float64) Bounder {
+func NewBounds(minX, minY, width, height float64) *Bounds {
 	return &Bounds{
-		min:    &Point{x: minX, y: minY},
-		max:    &Point{x: minX + width, y: minY + height},
-		width:  width,
-		height: height,
+		minX: minX, minY: minY,
+		maxX: minX + width, maxY: minY + height,
+		width:  width, height: height,
 	}
 }
 
 // ToBounds creates a new Bounds struct from the given min and max x y coordinates.
 //
 // Note: QuadGo format has minX and minY as the bottom left and maxX and maxY as top right.
-func ToBounds(minX, minY, maxX, maxY float64) Bounder {
+func ToBounds(minX, minY, maxX, maxY float64) *Bounds {
 	return &Bounds{
-		min:    &Point{x: minX, y: minY},
-		max:    &Point{x: maxX, y: maxY},
+		minX: minX, minY: minY,
+		maxX: maxX, maxY: maxY,
 		width:  math.Abs(maxX) - math.Abs(minX),
 		height: math.Abs(maxY) - math.Abs(minY),
 	}
 }
 
-// Center returns the center Point of the bounds.
-func (b *Bounds) Center() Pointer {
-	return &Point{
-		x: b.min.X() + (b.width / 2),
-		y: b.min.Y() + (b.height / 2),
-	}
+// Center returns the center x y coordinates of the bounds.
+func (b *Bounds) Center() (x, y float64) {
+	return b.minX + (b.width / 2), b.minY + (b.height / 2)
 }
 
-// IsIntersect returns weather or not the given entity intersects with the bounds.
+// IsIntersect returns whether or not the given entity intersects with the bounds.
 func (b *Bounds) IsIntersect(entity Entity) bool {
-	min, max := entity.Bounds()
+	minX, minY, maxX, maxY := entity.Bounds()
+
 	// Left of entity
-	if max.X() < b.min.X() {
-		return false
-	}
-	// Right of entity
-	if min.X() > b.max.X() {
-		return false
-	}
-	// Above entity
-	if max.Y() < b.min.Y() {
-		return false
-	}
-	// Below entity
-	if min.Y() > b.max.Y() {
+	if maxX < b.minX || minX > b.maxX || maxY < b.minY || minY > b.maxY {
 		return false
 	}
 
@@ -73,18 +57,18 @@ func (b *Bounds) IsIntersect(entity Entity) bool {
 }
 
 // Bounds returns the min and max xy coordinates of Bounds.
-func (b *Bounds) Bounds() (Pointer, Pointer) {
-	return b.min, b.max
+func (b *Bounds) Bounds() (minX, minY float64, maxX, maxY float64) {
+	return b.minX, b.minY, b.maxX, b.maxY
 }
 
 // Min returns the min xy coordinates of bounds.
-func (b *Bounds) Min() Pointer {
-	return b.min
+func (b *Bounds) Min() (x, y float64) {
+	return b.minX, b.minY
 }
 
 // Max returns the max xy coordinates of bounds.
-func (b *Bounds) Max() Pointer {
-	return b.max
+func (b *Bounds) Max() (x, y float64) {
+	return b.maxX, b.maxY
 }
 
 // W returns the width of bounds.
@@ -99,5 +83,5 @@ func (b *Bounds) H() float64 {
 
 // String formats the Stringer for logging reasons.
 func (b *Bounds) String() string {
-	return fmt.Sprintf("Min: %v, Max: %v, Width: %f, Height: %f", b.min, b.max, b.width, b.height)
+	return fmt.Sprintf("Min: %f, %f, Max: %f, %f, Width: %f, Height: %f", b.minX, b.minY, b.maxX, b.maxY, b.width, b.height)
 }
