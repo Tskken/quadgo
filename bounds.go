@@ -44,31 +44,9 @@ func (b *Bounds) Center() (x, y float64) {
 	return b.minX + (b.width / 2), b.minY + (b.height / 2)
 }
 
-// IsIntersect returns whether or not the given entity intersects with the bounds.
-func (b *Bounds) IsIntersect(entity Entity) bool {
-	minX, minY, maxX, maxY := entity.Bounds()
-
-	// Left of entity
-	if maxX < b.minX || minX > b.maxX || maxY < b.minY || minY > b.maxY {
-		return false
-	}
-
-	return true
-}
-
 // Bounds returns the min and max xy coordinates of Bounds.
 func (b *Bounds) Bounds() (minX, minY float64, maxX, maxY float64) {
 	return b.minX, b.minY, b.maxX, b.maxY
-}
-
-// Min returns the min xy coordinates of bounds.
-func (b *Bounds) Min() (x, y float64) {
-	return b.minX, b.minY
-}
-
-// Max returns the max xy coordinates of bounds.
-func (b *Bounds) Max() (x, y float64) {
-	return b.maxX, b.maxY
 }
 
 // W returns the width of bounds.

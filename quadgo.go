@@ -62,7 +62,7 @@ func (q *QuadGo) IsIntersect(entity Entity) bool {
 	// check all entities returned from retrieve for if they intersect
 	for _, e := range q.Retrieve(entity) {
 		// check for intersect
-		if e.IsIntersect(entity) {
+		if isIntersect(e, entity) {
 			return true
 		}
 	}
@@ -74,7 +74,7 @@ func (q *QuadGo) Intersects(entity Entity) (entities []Entity) {
 	// check all entities returned from retrieve for if they intersect
 	for _, e := range q.Retrieve(entity) {
 		// add to list if they intersect
-		if e.IsIntersect(entity) {
+		if isIntersect(e, entity) {
 			entities = append(entities, e)
 		}
 	}
@@ -100,6 +100,7 @@ func (n *node) retrieve(entity Entity) (entities []Entity) {
 			entities = append(entities, node.retrieve(entity)...)
 		}
 	} else {
+		// return entities from leaf
 		return n.entities
 	}
 	return
@@ -156,8 +157,10 @@ func (n *node) remove(entity Entity) {
 					// set node entities to nil
 					n.entities = make([]Entity, 0, cap(n.entities))
 
+					// check if children can be collapsed in to parent node
 					n.parent.collapse()
 				} else {
+					// remove entity from node
 					n.entities = append(n.entities[:i], n.entities[i+1:]...)
 				}
 			}
@@ -169,23 +172,31 @@ func (n *node) remove(entity Entity) {
 // if the count is less then maxEntities it collapses all children in to the parent node, copying
 // all of there entities to the parent node and setting the children to nil.
 func (n *node) collapse() {
+	// create base counter for children entity count
 	eCount := 0
 	for _, c := range n.children {
+		// add children's entity count to counter
 		eCount += len(c.entities)
 	}
 
+	// check if the total number of entities in the nodes children is
+	// less then the max number of entities allowed in an node
 	if eCount < cap(n.entities) {
+		// move children entities to parent node
 		for _, c := range n.children {
 			n.entities = append(n.entities, c.entities...)
 		}
 
+		// reset children
 		n.children = make([]*node, 0, 4)
 	}
 }
 
 // isEntity returns if a given entity exists in the quadtree.
 func (n *node) isEntity(entity Entity) bool {
+	// find all entities that could match given entity
 	for _, e := range n.retrieve(entity) {
+		// check if given entity equals entity
 		if e == entity {
 			return true
 		}
@@ -211,7 +222,7 @@ func (n *node) split() {
 	// new height for the child
 	subHeight := n.bounds.H() / 2
 	// nodes bottom left xy coordinates
-	x, y := n.bounds.Min()
+	x, y, _, _ := n.bounds.Bounds()
 
 	// Bottom Left child node
 	n.children = append(n.children, &node{
@@ -267,4 +278,20 @@ func getQuadrant(nodeBounds, entityBounds Bounder) quadrant {
 	default:
 		return none
 	}
+}
+
+// isIntersect returns whether or not the given entity intersects with the bounds.
+func isIntersect(node, entity Entity) bool {
+	// bounds of given node entity
+	nMinX, nMinY, nMaxX, nMaxY := node.Bounds()
+
+	// bounds of given entity
+	minX, minY, maxX, maxY := entity.Bounds()
+
+	// check if given entity does not fit with in node bounds
+	if maxX < nMinX || minX > nMaxX || maxY < nMinY || minY > nMaxY {
+		return false
+	}
+
+	return true
 }

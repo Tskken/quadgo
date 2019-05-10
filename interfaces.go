@@ -3,11 +3,8 @@ package QuadGo
 // Bounder interface for implementing all bounds for the quadtree.
 // Any entity that you want to add to the quadtree must implement this interface.
 type Bounder interface {
-	IsIntersect(Entity) bool
 	Center() (x, y float64)
 	Bounds() (minX, minY, maxX, maxY float64)
-	Min() (x, y float64)
-	Max() (x, y float64)
 	W() float64
 	H() float64
 }
