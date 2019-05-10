@@ -2,17 +2,11 @@ dist: xenial
 
 language: go
 
-env:
-    - GO111MODULE=on
-    - GOFLAGS='-mod vendor'
-
 go:
-  - 1.12.x
+  - tip
 
-git:
-  depth: 1
-
-install: true
+install:
+  - go get -t ./...
 
 notifications:
   email: false
@@ -22,5 +16,5 @@ before_script:
 
 script:
   - golangci-lint run
-  - go test -i ./..
-  - go test -i -bench ./..
+  - go test -i ./...
+  - go test -i -bench ./...
