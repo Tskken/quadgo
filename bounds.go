@@ -11,8 +11,8 @@ import (
 // You can creat your own entity and bounds by implementing the Bounder and Entity interfaces.
 type Bounds struct {
 	// Contains unexported fields
-	minX, minY float64
-	maxX, maxY float64
+	minX, minY    float64
+	maxX, maxY    float64
 	width, height float64
 }
 
@@ -23,7 +23,7 @@ func NewBounds(minX, minY, width, height float64) *Bounds {
 	return &Bounds{
 		minX: minX, minY: minY,
 		maxX: minX + width, maxY: minY + height,
-		width:  width, height: height,
+		width: width, height: height,
 	}
 }
 

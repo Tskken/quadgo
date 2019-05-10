@@ -177,19 +177,19 @@ func TestQuadGo_IsIntersect(t *testing.T) {
 	})
 
 	t.Run("Intersect topLeft test", func(t *testing.T) {
-		if !Quad.IsIntersect(ToBounds(0, Quad.root.bounds.H() / 2 + 20, 20, Quad.root.bounds.H() - 20)) {
+		if !Quad.IsIntersect(ToBounds(0, Quad.root.bounds.H()/2+20, 20, Quad.root.bounds.H()-20)) {
 			t.Fail()
 		}
 	})
 
 	t.Run("Intersect TopRight test", func(t *testing.T) {
-		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W() / 2 + 20, Quad.root.bounds.H() / 2 + 20, 50, 50)) {
+		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W()/2+20, Quad.root.bounds.H()/2+20, 50, 50)) {
 			t.Fail()
 		}
 	})
 
 	t.Run("Intersect BottomRight test", func(t *testing.T) {
-		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W() / 2 + 20, 0, 50, 50)) {
+		if !Quad.IsIntersect(NewBounds(Quad.root.bounds.W()/2+20, 0, 50, 50)) {
 			t.Fail()
 		}
 	})

@@ -26,7 +26,7 @@ type QuadGo struct {
 func NewQuadGo(maxEntities int, rootBounds Bounder) *QuadGo {
 	return &QuadGo{
 		root: &node{
-			parent:nil,
+			parent:   nil,
 			bounds:   rootBounds,
 			entities: make([]Entity, 0),
 			children: make(map[quadrant]*node),
@@ -85,7 +85,7 @@ func (q *QuadGo) Intersects(entity Entity) (entities []Entity) {
 
 // node is the container that holds the branch and leaf data for the tree.
 type node struct {
-	parent *node
+	parent   *node
 	bounds   Bounder
 	entities []Entity
 	children map[quadrant]*node
@@ -217,7 +217,7 @@ func (n *node) split() {
 
 	// Bottom Left child node
 	n.children[bottomLeft] = &node{
-		parent:n,
+		parent:   n,
 		bounds:   NewBounds(x, y, subWidth, subHeight),
 		entities: make([]Entity, 0),
 		children: make(map[quadrant]*node),
@@ -225,7 +225,7 @@ func (n *node) split() {
 
 	// Bottom Right child node
 	n.children[bottomRight] = &node{
-		parent:n,
+		parent:   n,
 		bounds:   NewBounds(x+subWidth, y, subWidth, subHeight),
 		entities: make([]Entity, 0),
 		children: make(map[quadrant]*node),
@@ -233,7 +233,7 @@ func (n *node) split() {
 
 	// Top Left child node
 	n.children[topLeft] = &node{
-		parent:n,
+		parent:   n,
 		bounds:   NewBounds(x, y+subHeight, subWidth, subHeight),
 		entities: make([]Entity, 0),
 		children: make(map[quadrant]*node),
@@ -241,7 +241,7 @@ func (n *node) split() {
 
 	// Top Right child node
 	n.children[topRight] = &node{
-		parent:n,
+		parent:   n,
 		bounds:   NewBounds(x+subWidth, y+subHeight, subWidth, subHeight),
 		entities: make([]Entity, 0),
 		children: make(map[quadrant]*node),
@@ -258,7 +258,7 @@ func getQuadrant(nodeBounds, entityBounds Bounder) quadrant {
 	// return ware the given entity fits in node
 	// none means it couldn't fit in node
 	switch {
-	case  (minY < centerY && maxY <= centerY) && (minX < centerX && maxX <= centerX):
+	case (minY < centerY && maxY <= centerY) && (minX < centerX && maxX <= centerX):
 		return bottomLeft
 	case (minY < centerY && maxY <= centerY) && (minX > centerX):
 		return bottomRight
