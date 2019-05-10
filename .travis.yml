@@ -12,8 +12,7 @@ go:
 git:
   depth: 1
 
-install:
-  - go get ./..
+install: true
 
 notifications:
   email: false
