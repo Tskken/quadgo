@@ -205,7 +205,7 @@ func (n *node) isEntity(entity Entity) bool {
 	// find all entities that could match given Entity
 	for _, e := range n.retrieve(entity.bounds) {
 		// check if given Entity equals Entity
-		if e.bounds == entity.bounds {
+		if e == entity {
 			return true
 		}
 	}

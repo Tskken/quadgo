@@ -153,7 +153,7 @@ func TestQuadGo_IsEntity(t *testing.T) {
 	}
 
 	t.Run("basic isEntity test", func(t *testing.T) {
-		if !Quad.IsEntity(entities[0]) {
+		if !Quad.IsEntity(entities[4]) {
 			t.Fail()
 		}
 	})
@@ -242,7 +242,7 @@ func BenchmarkQuadGo_IsIntersect(b *testing.B) {
 	}
 }
 
-func BenchmarkQuadGo_Find(b *testing.B) {
+func BenchmarkQuadGo_IsEntity(b *testing.B) {
 	Quad, _ := NewQuadGo(4, RootBounds)
 
 	for _, e := range entities {
@@ -250,7 +250,7 @@ func BenchmarkQuadGo_Find(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		if !Quad.IsEntity(entities[0]) {
+		if !Quad.IsEntity(entities[4]) {
 			b.Fail()
 		}
 	}
