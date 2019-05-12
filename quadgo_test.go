@@ -269,6 +269,12 @@ func BenchmarkQuadGo_Find(b *testing.B) {
 		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
 		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
 		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
+		NewBounds(25, 25, 25, 25),
+		NewBounds(50, 50, 50, 50),
+		NewBounds(75, 75, 25, 25),
+		NewBounds(10, 10, 35, 35),
+		NewBounds(15, 15, 15, 15),
+		NewBounds(150, 150, 200, 200),
 	}
 
 	for _, e := range entities {
@@ -276,7 +282,7 @@ func BenchmarkQuadGo_Find(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		if !Quad.IsEntity(entities[0]) {
+		if !Quad.IsEntity(entities[4]) {
 			b.Fail()
 		}
 	}
