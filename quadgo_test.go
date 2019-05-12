@@ -285,19 +285,6 @@ func BenchmarkQuadGo_Intersects(b *testing.B) {
 
 func BenchmarkQuadGo_IsEntity(b *testing.B) {
 	Quad, _ := NewQuadGo(4, w, h)
-  
-	entities := []Entity{
-		NewBounds(0, 0, 50, 50),
-		NewBounds(0, Quad.bounds.H()/2+50, 50, 50),
-		NewBounds(Quad.bounds.W()/2+50, 0, 50, 50),
-		NewBounds(Quad.bounds.W()/2+50, Quad.bounds.H()/2+50, 50, 50),
-		NewBounds(25, 25, 25, 25),
-		NewBounds(50, 50, 50, 50),
-		NewBounds(75, 75, 25, 25),
-		NewBounds(10, 10, 35, 35),
-		NewBounds(15, 15, 15, 15),
-		NewBounds(150, 150, 200, 200),
-	}
 
 	for _, e := range entities {
 		Quad.InsertEntity(e)
@@ -308,6 +295,7 @@ func BenchmarkQuadGo_IsEntity(b *testing.B) {
 			if !Quad.IsEntity(entities[4]) {
 				b.Fail()
 			}
+		}
 	})
 
 	b.Run("IsEntity fail bench", func(b *testing.B) {
