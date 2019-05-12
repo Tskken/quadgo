@@ -50,7 +50,7 @@ func TestQuadGo_Insert(t *testing.T) {
 
 		b := NewBounds(10, 10, 60, 60)
 		Quad.Insert(b, nil)
-		if Quad.entities[0].bounds != b {
+		if Quad.entities[0].Bounds != b {
 			t.Fail()
 		}
 	})
@@ -69,25 +69,25 @@ func TestQuadGo_Insert(t *testing.T) {
 		})
 
 		t.Run("Bottom Left Entity filled test", func(t *testing.T) {
-			if len(Quad.children[bottomLeft].entities) == 0 || Quad.children[bottomLeft].entities[0].bounds != bounds[0] {
+			if len(Quad.children[bottomLeft].entities) == 0 || Quad.children[bottomLeft].entities[0].Bounds != bounds[0] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Bottom Right Entity filled test", func(t *testing.T) {
-			if len(Quad.children[bottomRight].entities) == 0 || Quad.children[bottomRight].entities[0].bounds != bounds[1] {
+			if len(Quad.children[bottomRight].entities) == 0 || Quad.children[bottomRight].entities[0].Bounds != bounds[1] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Top Left Entity filled test", func(t *testing.T) {
-			if len(Quad.children[topLeft].entities) == 0 || Quad.children[topLeft].entities[0].bounds != bounds[2] {
+			if len(Quad.children[topLeft].entities) == 0 || Quad.children[topLeft].entities[0].Bounds != bounds[2] {
 				t.Fail()
 			}
 		})
 
 		t.Run("Top Right Entity filled test", func(t *testing.T) {
-			if len(Quad.children[topRight].entities) == 0 || Quad.children[topRight].entities[0].bounds != bounds[3] {
+			if len(Quad.children[topRight].entities) == 0 || Quad.children[topRight].entities[0].Bounds != bounds[3] {
 				t.Fail()
 			}
 		})

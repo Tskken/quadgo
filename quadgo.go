@@ -24,9 +24,9 @@ type QuadGo struct {
 //
 // - maxEntities: max number of Entities per node.
 //
-// - screenWidth: Width of the screen or map that will encompass all bounds and objects.
+// - screenWidth: Width of the screen or map that will encompass all Bounds and objects.
 //
-// - screenHeight: Height of the screen or map that will encompass all bounds and objects.
+// - screenHeight: Height of the screen or map that will encompass all Bounds and objects.
 func NewQuadGo(maxEntities int, screenWidth, screenHeight float64) (*QuadGo, error) {
 	if maxEntities <= 0 {
 		return nil, errors.New("given values are not valid")
@@ -41,15 +41,15 @@ func NewQuadGo(maxEntities int, screenWidth, screenHeight float64) (*QuadGo, err
 	}, nil
 }
 
-// Insert inserts a bounds in to the quadtree with a corresponding object.
+// Insert inserts a Bounds in to the quadtree with a corresponding Object.
 //
-// The object is any data type you may want to store in the quadtree that is not a bounds.
-// When searching the tree it will return a Entity which holds the given bounds and the object provide.
+// The Object is any data type you may want to store in the quadtree that is not a Bounds.
+// When searching the tree it will return a Entity which holds the given Bounds and the Object provide.
 //
-// If you do not want to add an object to the tree you can just put nil.
+// If you do not want to add an Object to the tree you can just put nil.
 func (q *QuadGo) Insert(bounds Bounds, object interface{}) {
 	// insert in to quadtree
-	q.insert(Entity{bounds: bounds, object: object})
+	q.insert(Entity{Bounds: bounds, Object: object})
 }
 
 // InsertEntity inserts an entity in to the quadtree.
@@ -63,7 +63,7 @@ func (q *QuadGo) Remove(entity Entity) {
 	q.remove(entity)
 }
 
-// Retrieve returns a list of all entities that are with in a nodes bounds that the given bounds fits with in.
+// Retrieve returns a list of all entities that are with in a nodes Bounds that the given Bounds fits with in.
 func (q *QuadGo) Retrieve(bounds Bounds) []Entity {
 	// retrieve entities for quadtree
 	return q.retrieve(bounds)
@@ -74,24 +74,24 @@ func (q *QuadGo) IsEntity(entity Entity) bool {
 	return q.isEntity(entity)
 }
 
-// IsIntersect takes a bounds and returns if it intersect with any entity in the quadtree.
+// IsIntersect takes a Bounds and returns if it intersect with any entity in the quadtree.
 func (q *QuadGo) IsIntersect(bounds Bounds) bool {
 	// check all entities returned from retrieve for if they intersect
 	for _, e := range q.Retrieve(bounds) {
 		// check for intersect
-		if e.bounds.isIntersect(bounds) {
+		if e.Bounds.isIntersect(bounds) {
 			return true
 		}
 	}
 	return false
 }
 
-// Intersects takes a bounds and returns a list of all entities it intersects with.
+// Intersects takes a Bounds and returns a list of all entities it intersects with.
 func (q *QuadGo) Intersects(bounds Bounds) (entities []Entity) {
 	// check all entities returned from retrieve for if they intersect
 	for _, e := range q.Retrieve(bounds) {
 		// add to list if they intersect
-		if e.bounds.isIntersect(bounds) {
+		if e.Bounds.isIntersect(bounds) {
 			entities = append(entities, e)
 		}
 	}
@@ -106,7 +106,7 @@ type node struct {
 	children []*node
 }
 
-// retrieve finds all of the entities with in a the nodes bounds that the given bounds can fit with in.
+// retrieve finds all of the entities with in a the nodes Bounds that the given Bounds can fit with in.
 func (n *node) retrieve(bounds Bounds) (entities []Entity) {
 	// check if you are at a leaf node
 	if len(n.children) > 0 {
@@ -128,7 +128,7 @@ func (n *node) insert(entity Entity) {
 	// Check if you are on a leaf node
 	if len(n.children) > 0 {
 		// IsEntity quadrant to insert in to
-		if node := n.getQuadrant(entity.bounds); node != nil {
+		if node := n.getQuadrant(entity.Bounds); node != nil {
 			// Insert in to next node
 			node.insert(entity)
 		}
@@ -142,7 +142,7 @@ func (n *node) insert(entity Entity) {
 			for _, e := range append(n.entities, entity) {
 				// IsEntity quadrant to insert Entity in to
 				// Nil means it didn't fit in to any quadrant
-				if node := n.getQuadrant(e.bounds); node != nil {
+				if node := n.getQuadrant(e.Bounds); node != nil {
 					// insert Entity to new child
 					node.insert(e)
 				}
@@ -161,7 +161,7 @@ func (n *node) remove(entity Entity) {
 	// check if we are on a leaf node
 	if len(n.children) > 0 {
 		// not on a leaf, get next quadrant
-		if node := n.getQuadrant(entity.bounds); node != nil {
+		if node := n.getQuadrant(entity.Bounds); node != nil {
 			node.remove(entity)
 		}
 	} else {
@@ -212,7 +212,7 @@ func (n *node) collapse() {
 // isEntity returns if a given Entity exists in the quadtree.
 func (n *node) isEntity(entity Entity) bool {
 	// find all entities that could match given Entity
-	for _, e := range n.retrieve(entity.bounds) {
+	for _, e := range n.retrieve(entity.Bounds) {
 		// check if given Entity equals Entity
 		if e == entity {
 			return true
@@ -259,9 +259,9 @@ func (n *node) split() {
 	})
 }
 
-// getQuadrant returns the nodes child node that the given bounds fits with in.
+// getQuadrant returns the nodes child node that the given Bounds fits with in.
 func (n *node) getQuadrant(bounds Bounds) *node {
-	// get the center coordinates for the node bounds
+	// get the center coordinates for the node Bounds
 	center := n.bounds.center()
 
 	switch {
