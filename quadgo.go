@@ -1,19 +1,22 @@
 package QuadGo
 
-// constant values for child quadrant map.
+import (
+	"errors"
+	"math"
+)
+
+// constant values for child quadrants.
 const (
 	bottomLeft quadrant = iota
 	bottomRight
 	topLeft
 	topRight
-	none
 )
 
 type quadrant uint8
 
 // QuadGo - Base Quadtree data structure.
 type QuadGo struct {
-	// Contains all unexported fields
 	*node
 }
 
@@ -21,60 +24,74 @@ type QuadGo struct {
 //
 // - maxEntities: max number of Entities per node.
 //
-// - rootBounds: the max bounds of the tree.
-func NewQuadGo(maxEntities int, rootBounds Bounder) *QuadGo {
+// - screenWidth: Width of the screen or map that will encompass all bounds and objects.
+//
+// - screenHeight: Height of the screen or map that will encompass all bounds and objects.
+func NewQuadGo(maxEntities int, screenWidth, screenHeight float64) (*QuadGo, error) {
+	if maxEntities <= 0 {
+		return nil, errors.New("given values are not valid")
+	}
 	return &QuadGo{
 		node: &node{
 			parent:   nil,
-			bounds:   rootBounds,
+			bounds:   NewBounds(0, 0, math.Abs(screenWidth), math.Abs(screenHeight)),
 			entities: make([]Entity, 0, maxEntities),
 			children: make([]*node, 0, 4),
 		},
-	}
+	}, nil
 }
 
-// Insert inserts an Entity in to the quadtree.
-func (q *QuadGo) Insert(entity Entity) {
+// Insert inserts a bounds in to the quadtree with a corresponding object.
+//
+// The object is any data type you may want to store in the quadtree that is not a bounds.
+// When searching the tree it will return a Entity which holds the given bounds and the object provide.
+//
+// If you do not want to add an object to the tree you can just put nil.
+func (q *QuadGo) Insert(bounds Bounds, object interface{}) {
 	// insert in to quadtree
+	q.insert(Entity{bounds: bounds, object: object})
+}
+
+// InsertEntity inserts an entity in to the quadtree.
+func (q *QuadGo) InsertEntity(entity Entity) {
 	q.insert(entity)
 }
 
-// Remove removes the given entity from the quadtree.
+// Remove removes the given Entity from the quadtree.
 func (q *QuadGo) Remove(entity Entity) {
 	// remove from quadtree
 	q.remove(entity)
 }
 
-// Retrieve retrieves all entities that are contained in all bounds the given entity fits with in.
-func (q *QuadGo) Retrieve(entity Entity) []Entity {
+// Retrieve returns a list of all entities that are with in a nodes bounds that the given bounds fits with in.
+func (q *QuadGo) Retrieve(bounds Bounds) []Entity {
 	// retrieve entities for quadtree
-	return q.retrieve(entity)
+	return q.retrieve(bounds)
 }
 
-// IsEntity checks if a given entity exists in the quadtree.
+// IsEntity checks if a given Entity exists in the quadtree.
 func (q *QuadGo) IsEntity(entity Entity) bool {
 	return q.isEntity(entity)
 }
 
-// IsIntersect gets all entities within the bounds that the given entity fits within and then checks if
-// any of the entities intersect with the given entity.
-func (q *QuadGo) IsIntersect(entity Entity) bool {
+// IsIntersect takes a bounds and returns if it intersect with any entity in the quadtree.
+func (q *QuadGo) IsIntersect(bounds Bounds) bool {
 	// check all entities returned from retrieve for if they intersect
-	for _, e := range q.Retrieve(entity) {
+	for _, e := range q.Retrieve(bounds) {
 		// check for intersect
-		if isIntersect(e, entity) {
+		if e.bounds.isIntersect(bounds) {
 			return true
 		}
 	}
 	return false
 }
 
-// Intersects returns a list of all entities the given entity intersects with.
-func (q *QuadGo) Intersects(entity Entity) (entities []Entity) {
+// Intersects takes a bounds and returns a list of all entities it intersects with.
+func (q *QuadGo) Intersects(bounds Bounds) (entities []Entity) {
 	// check all entities returned from retrieve for if they intersect
-	for _, e := range q.Retrieve(entity) {
+	for _, e := range q.Retrieve(bounds) {
 		// add to list if they intersect
-		if isIntersect(e, entity) {
+		if e.bounds.isIntersect(bounds) {
 			entities = append(entities, e)
 		}
 	}
@@ -84,20 +101,20 @@ func (q *QuadGo) Intersects(entity Entity) (entities []Entity) {
 // node is the container that holds the branch and leaf data for the tree.
 type node struct {
 	parent   *node
-	bounds   Bounder
+	bounds   Bounds
 	entities []Entity
 	children []*node
 }
 
-// retrieve finds any entities that are contained in the bounding box the given entity fits in and then returns them.
-func (n *node) retrieve(entity Entity) (entities []Entity) {
+// retrieve finds all of the entities with in a the nodes bounds that the given bounds can fit with in.
+func (n *node) retrieve(bounds Bounds) (entities []Entity) {
 	// check if you are at a leaf node
 	if len(n.children) > 0 {
-		// isEntity quadrant the given entity fits in to
+		// isEntity quadrant the given Entity fits in to
 		// - if node is nil returns. Entity could not fit in tree
-		if node := n.getQuadrant(entity); node != nil {
+		if node := n.getQuadrant(bounds); node != nil {
 			// add all entities from found quadrant to list
-			entities = append(entities, node.retrieve(entity)...)
+			entities = append(entities, node.retrieve(bounds)...)
 		}
 	} else {
 		// return entities from leaf
@@ -106,12 +123,12 @@ func (n *node) retrieve(entity Entity) (entities []Entity) {
 	return
 }
 
-// insert inserts a given entity in to the quadtree.
+// insert inserts a given Entity in to the quadtree.
 func (n *node) insert(entity Entity) {
 	// Check if you are on a leaf node
 	if len(n.children) > 0 {
 		// IsEntity quadrant to insert in to
-		if node := n.getQuadrant(entity); node != nil {
+		if node := n.getQuadrant(entity.bounds); node != nil {
 			// Insert in to next node
 			node.insert(entity)
 		}
@@ -123,34 +140,34 @@ func (n *node) insert(entity Entity) {
 
 			// loop through all entities to add them to there appropriate child node
 			for _, e := range append(n.entities, entity) {
-				// IsEntity quadrant to insert entity in to
+				// IsEntity quadrant to insert Entity in to
 				// Nil means it didn't fit in to any quadrant
-				if node := n.getQuadrant(e); node != nil {
-					// insert entity to new child
+				if node := n.getQuadrant(e.bounds); node != nil {
+					// insert Entity to new child
 					node.insert(e)
 				}
 			}
 			// clear entities for branch node
 			n.entities = make([]Entity, 0, cap(n.entities))
 		} else {
-			// Add entity to node
+			// Add Entity to node
 			n.entities = append(n.entities, entity)
 		}
 	}
 }
 
-// remove removes the given entity from the quadtree.
+// remove removes the given Entity from the quadtree.
 func (n *node) remove(entity Entity) {
 	// check if we are on a leaf node
 	if len(n.children) > 0 {
 		// not on a leaf, get next quadrant
-		if node := n.getQuadrant(entity); node != nil {
+		if node := n.getQuadrant(entity.bounds); node != nil {
 			node.remove(entity)
 		}
 	} else {
-		// check entities in leaf for given entity
+		// check entities in leaf for given Entity
 		for i, e := range n.entities {
-			// check if given entity is the same as node entity
+			// check if given Entity is the same as node Entity
 			if e == entity {
 				// check if removal would make the leaf have no entities
 				if len(n.entities) == 1 {
@@ -160,7 +177,7 @@ func (n *node) remove(entity Entity) {
 					// check if children can be collapsed in to parent node
 					n.parent.collapse()
 				} else {
-					// remove entity from node
+					// remove Entity from node
 					n.entities = append(n.entities[:i], n.entities[i+1:]...)
 				}
 			}
@@ -172,10 +189,10 @@ func (n *node) remove(entity Entity) {
 // if the count is less then maxEntities it collapses all children in to the parent node, copying
 // all of there entities to the parent node and setting the children to nil.
 func (n *node) collapse() {
-	// create base counter for children entity count
+	// create base counter for children Entity count
 	eCount := 0
 	for _, c := range n.children {
-		// add children's entity count to counter
+		// add children's Entity count to counter
 		eCount += len(c.entities)
 	}
 
@@ -192,11 +209,11 @@ func (n *node) collapse() {
 	}
 }
 
-// isEntity returns if a given entity exists in the quadtree.
+// isEntity returns if a given Entity exists in the quadtree.
 func (n *node) isEntity(entity Entity) bool {
-	// find all entities that could match given entity
-	for _, e := range n.retrieve(entity) {
-		// check if given entity equals entity
+	// find all entities that could match given Entity
+	for _, e := range n.retrieve(entity.bounds) {
+		// check if given Entity equals Entity
 		if e == entity {
 			return true
 		}
@@ -205,29 +222,14 @@ func (n *node) isEntity(entity Entity) bool {
 	return false
 }
 
-// getQuadrant gets the node for the quadrant the given bounds fits within.
-func (n *node) getQuadrant(bounds Bounder) *node {
-	// get index to quadrant the bounds fits with in
-	if index := getQuadrant(n.bounds, bounds); index != none {
-		// return child node for quadrant index
-		return n.children[index]
-	}
-	return nil
-}
-
 // split creates the children for a node by subdividing the nodes boundaries in to 4 even quadrants.
 func (n *node) split() {
-	// new width for child
-	subWidth := n.bounds.W() / 2
-	// new height for the child
-	subHeight := n.bounds.H() / 2
-	// nodes bottom left xy coordinates
-	x, y, _, _ := n.bounds.Bounds()
+	center := n.bounds.center()
 
 	// Bottom Left child node
 	n.children = append(n.children, &node{
 		parent:   n,
-		bounds:   NewBounds(x, y, subWidth, subHeight),
+		bounds:   NewBounds(n.bounds.min.x, n.bounds.min.y, center.x, center.y),
 		entities: make([]Entity, 0, cap(n.entities)),
 		children: make([]*node, 0, 4),
 	})
@@ -235,7 +237,7 @@ func (n *node) split() {
 	// Bottom Right child node
 	n.children = append(n.children, &node{
 		parent:   n,
-		bounds:   NewBounds(x+subWidth, y, subWidth, subHeight),
+		bounds:   NewBounds(center.x, n.bounds.min.y, n.bounds.max.x, center.y),
 		entities: make([]Entity, 0, cap(n.entities)),
 		children: make([]*node, 0, 4),
 	})
@@ -243,7 +245,7 @@ func (n *node) split() {
 	// Top Left child node
 	n.children = append(n.children, &node{
 		parent:   n,
-		bounds:   NewBounds(x, y+subHeight, subWidth, subHeight),
+		bounds:   NewBounds(n.bounds.min.x, center.y, center.x, n.bounds.max.y),
 		entities: make([]Entity, 0, cap(n.entities)),
 		children: make([]*node, 0, 4),
 	})
@@ -251,47 +253,27 @@ func (n *node) split() {
 	// Top Right child node
 	n.children = append(n.children, &node{
 		parent:   n,
-		bounds:   NewBounds(x+subWidth, y+subHeight, subWidth, subHeight),
+		bounds:   NewBounds(center.x, center.y, n.bounds.max.x, n.bounds.max.y),
 		entities: make([]Entity, 0, cap(n.entities)),
 		children: make([]*node, 0, 4),
 	})
 }
 
-// getQuadrant returns the quadrant ware the given entityBounds fits with in the given nodeBounds.
-func getQuadrant(nodeBounds, entityBounds Bounder) quadrant {
+// getQuadrant returns the nodes child node that the given bounds fits with in.
+func (n *node) getQuadrant(bounds Bounds) *node {
 	// get the center coordinates for the node bounds
-	centerX, centerY := nodeBounds.Center()
-	// get the min and max coordinates for the entity bounds
-	minX, minY, maxX, maxY := entityBounds.Bounds()
+	center := n.bounds.center()
 
-	// return ware the given entity fits in node
-	// none means it couldn't fit in node
 	switch {
-	case (minY < centerY && maxY < centerY) && (minX < centerX && maxX < centerX):
-		return bottomLeft
-	case (minY < centerY && maxY < centerY) && (minX > centerX):
-		return bottomRight
-	case (minY > centerY) && (minX < centerX && maxX < centerX):
-		return topLeft
-	case (minY > centerY) && (minX > centerX):
-		return topRight
+	case (bounds.min.x < center.x && bounds.max.x <= center.x) && (bounds.min.y < center.y && bounds.max.y <= center.y):
+		return n.children[bottomLeft]
+	case (bounds.min.x >= center.x) && (bounds.min.y < center.y && bounds.max.y <= center.y):
+		return n.children[bottomRight]
+	case (bounds.min.x < center.x && bounds.max.x <= center.x) && (bounds.min.y >= center.y):
+		return n.children[topLeft]
+	case (bounds.min.x >= center.x) && (bounds.min.y >= center.y):
+		return n.children[topRight]
 	default:
-		return none
+		return nil
 	}
-}
-
-// isIntersect returns whether or not the given entity intersects with the bounds.
-func isIntersect(node, entity Entity) bool {
-	// bounds of given node entity
-	nMinX, nMinY, nMaxX, nMaxY := node.Bounds()
-
-	// bounds of given entity
-	minX, minY, maxX, maxY := entity.Bounds()
-
-	// check if given entity does not fit with in node bounds
-	if maxX < nMinX || minX > nMaxX || maxY < nMinY || minY > nMaxY {
-		return false
-	}
-
-	return true
 }
