@@ -5,14 +5,20 @@ import (
 )
 
 var (
-	w = 1024.0
-	h = 768.0
+	w          = 1024.0
+	h          = 768.0
 	RootBounds = NewBounds(0, 0, w, h)
 	bounds     = []Bounds{
 		NewBounds(0, 0, w/2, h/2),
 		NewBounds(w/2, 0, w, h/2),
 		NewBounds(0, h/2, w/2, h),
 		NewBounds(w/2, h/2, w, h),
+		NewBounds(25, 25, 50, 50),
+		NewBounds(50, 50, 100, 100),
+		NewBounds(75, 75, 100, 100),
+		NewBounds(10, 10, 45, 4530),
+		NewBounds(15, 15, 30, 15),
+		NewBounds(150, 150, 350, 350),
 	}
 	entities = []Entity{
 		{NewBounds(0, 0, w/2, h/2), nil},
@@ -44,7 +50,7 @@ func TestNewQuadGo(t *testing.T) {
 	})
 
 	t.Run("Create new QuadGo bad Bounds test", func(t *testing.T) {
-		_, err := NewQuadGo(1, NewBounds(0,0,0,0))
+		_, err := NewQuadGo(1, NewBounds(0, 0, 0, 0))
 		_, err2 := NewQuadGo(1, NewBounds(20, 20, 0, 0))
 		if err == nil || err2 == nil {
 			t.Fail()

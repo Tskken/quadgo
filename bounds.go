@@ -10,7 +10,7 @@ import (
 // You can creat your own Entity and bounds by implementing the Bounder and Entity interfaces.
 type Bounds struct {
 	// Contains unexported fields
-	min, max point
+	min, max      point
 	width, height float64
 }
 
@@ -19,16 +19,16 @@ type Bounds struct {
 // Note: QuadGo format has minX and minY as the bottom left and maxX and maxY as top right.
 func NewBounds(minX, minY, maxX, maxY float64) Bounds {
 	return Bounds{
-		min: point{x: minX, y: minY},
-		max: point{x: maxX, y: maxY},
-		width:math.Abs(maxX) - math.Abs(minX),
-		height:math.Abs(maxY) - math.Abs(minY),
+		min:    point{x: minX, y: minY},
+		max:    point{x: maxX, y: maxY},
+		width:  math.Abs(maxX) - math.Abs(minX),
+		height: math.Abs(maxY) - math.Abs(minY),
 	}
 }
 
 // Center returns the center x y coordinates of the bounds.
 func (b *Bounds) center() point {
-	return point{x: b.max.x - (b.width/2), y: b.max.y - (b.height/2)}
+	return point{x: b.max.x - (b.width / 2), y: b.max.y - (b.height / 2)}
 }
 
 // isIntersect returns whether or not the given Entity intersects with the bounds.
