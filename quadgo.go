@@ -1,6 +1,9 @@
 package QuadGo
 
-import "errors"
+import (
+	"errors"
+	"math"
+)
 
 // constant values for child quadrant map.
 const (
@@ -23,14 +26,14 @@ type QuadGo struct {
 // - maxEntities: max number of Entities per node.
 //
 // - rootBounds: the max bounds of the tree.
-func NewQuadGo(maxEntities int, rootBounds Bounds) (*QuadGo, error) {
-	if maxEntities <= 0 || rootBounds.validate() {
+func NewQuadGo(maxEntities int, screenWidth, screenHeight float64) (*QuadGo, error) {
+	if maxEntities <= 0 {
 		return nil, errors.New("given values are not valid")
 	}
 	return &QuadGo{
 		node: &node{
 			parent:   nil,
-			bounds:   rootBounds,
+			bounds:   NewBounds(0, 0, math.Abs(screenWidth), math.Abs(screenHeight)),
 			entities: make([]Entity, 0, maxEntities),
 			children: make([]*node, 0, 4),
 		},
