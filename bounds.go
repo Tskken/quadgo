@@ -41,9 +41,9 @@ func (b *Bounds) isIntersect(bounds Bounds) bool {
 	return true
 }
 
-func (b *Bounds) validate() bool {
-	return b.min.x >= b.max.x || b.min.y >= b.max.y
-}
+//func (b *Bounds) validate() bool {
+//	return b.min.x >= b.max.x || b.min.y >= b.max.y
+//}
 
 //// String formats the Stringer for logging reasons.
 //func (b *Bounds) String() string {

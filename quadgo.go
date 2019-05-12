@@ -2,7 +2,6 @@ package QuadGo
 
 import (
 	"errors"
-	"math"
 )
 
 // constant values for child quadrant map.
@@ -33,7 +32,7 @@ func NewQuadGo(maxEntities int, screenWidth, screenHeight float64) (*QuadGo, err
 	return &QuadGo{
 		node: &node{
 			parent:   nil,
-			bounds:   NewBounds(0, 0, math.Abs(screenWidth), math.Abs(screenHeight)),
+			bounds:   NewBounds(0, 0, screenWidth, screenHeight),
 			entities: make([]Entity, 0, maxEntities),
 			children: make([]*node, 0, 4),
 		},

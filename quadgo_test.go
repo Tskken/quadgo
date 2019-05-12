@@ -13,12 +13,6 @@ var (
 		NewBounds(w/2, 0, w, h/2),
 		NewBounds(0, h/2, w/2, h),
 		NewBounds(w/2, h/2, w, h),
-		NewBounds(25, 25, 50, 50),
-		NewBounds(50, 50, 100, 100),
-		NewBounds(75, 75, 100, 100),
-		NewBounds(10, 10, 45, 4530),
-		NewBounds(15, 15, 30, 15),
-		NewBounds(150, 150, 350, 350),
 	}
 	entities = []Entity{
 		{NewBounds(0, 0, w/2, h/2), nil},
@@ -113,6 +107,18 @@ func TestQuadGo_Remove(t *testing.T) {
 
 		if Quad.IsEntity(entities[6]) {
 			t.Fail()
+		}
+	})
+
+	t.Run("collapse test", func(t *testing.T) {
+		for _, e := range entities[4:] {
+			Quad.Remove(e)
+		}
+
+		for _, c := range Quad.children {
+			if len(c.children) != 0 {
+				t.Fail()
+			}
 		}
 	})
 
@@ -309,7 +315,18 @@ func BenchmarkQuadGo_Remove(b *testing.B) {
 		Quad.InsertEntity(e)
 	}
 
-	for n := 0; n < b.N; n++ {
-		Quad.Remove(entities[6])
-	}
+	b.Run("Remove pass bench", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			Quad.Remove(entities[6])
+		}
+	})
+
+	b.Run("Collapse pass bench", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			for _, e := range entities[4:] {
+				Quad.Remove(e)
+			}
+		}
+
+	})
 }
