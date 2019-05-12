@@ -70,6 +70,11 @@ func (q *QuadGo) Retrieve(bounds Bounds) []Entity {
 }
 
 // IsEntity checks if a given Entity exists in the quadtree.
+//
+// Note: This function currently is very slow for unknown reasons and it is advised to just not use it.
+// If you are going to use IsEntity() for something understand it may slow down performance significantly.
+// In a future update (likely V2.0.1) I hope to fix this issue but for know be noted this function is not advised to be
+// used.
 func (q *QuadGo) IsEntity(entity Entity) bool {
 	return q.isEntity(entity)
 }
