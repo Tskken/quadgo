@@ -253,16 +253,18 @@ func BenchmarkQuadGo_IsIntersect(b *testing.B) {
 	}
 
 	b.Run("IsIntersect true bench", func(b *testing.B) {
+		bounds := NewBounds(35, 70, 85, 150)
 		for n := 0; n < b.N; n++ {
-			if !Quad.IsIntersect(NewBounds(35, 70, 85, 150)) {
+			if !Quad.IsIntersect(bounds) {
 				b.Fail()
 			}
 		}
 	})
 
 	b.Run("IsIntersect false bench", func(b *testing.B) {
+		bounds := NewBounds(-20, -50, -10, -20)
 		for n := 0; n < b.N; n++ {
-			if Quad.IsIntersect(NewBounds(-20, -50, -10, -20)) {
+			if Quad.IsIntersect(bounds) {
 				b.Fail()
 			}
 		}
@@ -276,8 +278,10 @@ func BenchmarkQuadGo_Intersects(b *testing.B) {
 		Quad.Insert(b, nil)
 	}
 
+	bounds := NewBounds(25, 50, 50, 75)
+
 	for n := 0; n < b.N; n++ {
-		if len(Quad.Intersects(NewBounds(25, 50, 50, 75))) == 0 {
+		if len(Quad.Intersects(bounds)) == 0 {
 			b.Fail()
 		}
 	}
