@@ -1,4 +1,4 @@
-package QuadGo
+package quadgo
 
 // point is the basic x y coordinate structure for QuadGo
 type point struct {

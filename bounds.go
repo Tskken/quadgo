@@ -1,4 +1,4 @@
-package QuadGo
+package quadgo
 
 import (
 	"math"

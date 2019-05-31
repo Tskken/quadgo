@@ -1,4 +1,4 @@
-package QuadGo
+package quadgo
 
 // Entity is the basic Entity stricture type for QuadGo.
 //
@@ -8,5 +8,5 @@ package QuadGo
 // the basic Bounds data.
 type Entity struct {
 	Bounds Bounds
-	Object interface{}
+	Object []interface{}
 }
