@@ -4,6 +4,8 @@ QuadGO is a Quadtree implementation aimed at being used for video game collision
 The main goal of this library is to create an easy to use and easily extendable quadtree implementation
 in Golang.
 
+# Note this is an out of date readme! This will be updated before 3.0 full release.
+
 ## Getting Started
 To get QuadGo run  `go get github.com/Tskken/QuadGo` in your command line of choice.
 Then add it to any of your existing projects by adding `import "github.com/Tskken/QuadGo".
