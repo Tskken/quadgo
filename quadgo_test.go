@@ -204,7 +204,7 @@ func TestQuadGo_Insert(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "insert to split",
+			name: "insert to splitAndMove",
 			fields: fields{
 				[]Option{
 					SetMaxEntities(1),
@@ -264,21 +264,21 @@ func TestQuadGo_InsertEntity(t *testing.T) {
 			name: "basic insert",
 			args: args{
 				entities: Entities{
-					NewEntity(0,0,50,50),
+					NewEntity(0, 0, 50, 50),
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:"no entities given error",
-			wantErr:true,
+			name:    "no entities given error",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
-			if err := q.InsertEntity(tt.args.entities...); (err != nil) != tt.wantErr {
-				t.Errorf("QuadGo.InsertEntity() error = %v, wantErr %v", err, tt.wantErr)
+			if err := q.InsertEntities(tt.args.entities...); (err != nil) != tt.wantErr {
+				t.Errorf("QuadGo.InsertEntities() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -346,7 +346,7 @@ func TestQuadGo_Remove(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "collapse test",
+			name: "collapseAndMove test",
 			fields: fields{
 				entities: Entities{
 					NewEntity(0, 0, 50, 50),
@@ -370,9 +370,9 @@ func TestQuadGo_Remove(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.Remove() error = %v", err)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.Remove() error = %v", err)
 				}
 			}
 			for _, e := range tt.args.entities {
@@ -434,9 +434,9 @@ func TestQuadGo_RetrieveFromPoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.RetrieveFromPoint() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.RetrieveFromPoint() for %v", e)
 				}
 			}
 			if got := q.RetrieveFromPoint(tt.args.point); !reflect.DeepEqual(got, tt.want) {
@@ -496,9 +496,9 @@ func TestQuadGo_RetrieveFromBound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.RetrieveFromBound() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.RetrieveFromBound() for %v", e)
 				}
 			}
 			if got := q.RetrieveFromBound(tt.args.bound); !reflect.DeepEqual(got, tt.want) {
@@ -553,9 +553,9 @@ func TestQuadGo_IsEntity(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.IsEntity() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsEntity() for %v", e)
 				}
 			}
 			if got := q.IsEntity(tt.args.entity); got != tt.want {
@@ -608,9 +608,9 @@ func TestQuadGo_IsIntersectPoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.IsIntersectPoint() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
 				}
 			}
 			if got := q.IsIntersectPoint(tt.args.point); got != tt.want {
@@ -663,9 +663,9 @@ func TestQuadGo_IsIntersectBound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.IsIntersectPoint() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
 				}
 			}
 			if got := q.IsIntersectBound(tt.args.bound); got != tt.want {
@@ -719,9 +719,9 @@ func TestQuadGo_IntersectsPoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.IsIntersectPoint() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
 				}
 			}
 			if gotIntersects := q.IntersectsPoint(tt.args.point); !reflect.DeepEqual(gotIntersects, tt.want) {
@@ -775,9 +775,9 @@ func TestQuadGo_IntersectsBound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, e := range tt.fields.entities {
-				err := q.InsertEntity(e)
+				err := q.InsertEntities(e)
 				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntity() found in QuadGo.IsIntersectPoint() for %v", e)
+					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
 				}
 			}
 			if gotIntersects := q.IntersectsBound(tt.args.bound); !reflect.DeepEqual(gotIntersects, tt.want) {

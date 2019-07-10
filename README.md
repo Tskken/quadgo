@@ -4,90 +4,70 @@ QuadGO is a Quadtree implementation aimed at being used for video game collision
 The main goal of this library is to create an easy to use and easily extendable quadtree implementation
 in Golang.
 
-# Note this is an out of date readme! This will be updated before 3.0 full release.
-
 ## Getting Started
-To get QuadGo run  `go get github.com/Tskken/QuadGo` in your command line of choice.
-Then add it to any of your existing projects by adding `import "github.com/Tskken/QuadGo".
+To get QuadGo run  `go get github.com/Tskken/quadgo` in your command line of choice.
+Then add it to any of your existing projects by adding `import "github.com/Tskken/quadgo"`.
 
 ## Tutorial
 
-First you need to create a QuadGo instance.
+#### Creating the quadtree
 
-```go
-tree, err := NewQuadGo(10, 1024, 768)
-```
+First you need to create a QuadGo instance. For a basic tree using pre-definde presets you only need to use
+the `tree := quadgo.New()` call. This will create and return a new quadtree with the pre-defined settings.
 
-The first value in NewQuadGo() sets the max number of entities a given node can have
-before it splits. This number has to be greater then 0 and will return an error otherwise.
-The second two values are the width and height of the screen or game world. This will be the maximum x and y
-of the root of the tree. That means every object that is put in to the tree must fit with in these bounds.
+The defaults for this library are set to:
+- Bounds: 1024x768
+- Max entities per node: 10
+- Max depth of the tree: 2
+
+If you want to change the default settings you pass New() the options functions with there given arguments. For
+example if you wanted to change the root bounds of the tree to be 1920x1080 you would do `quadgo.New(quadgo.SetBounds(1920, 1080))`
+
+The current available options you can give to New() are:
+- SetBounds(width, height float64)
+- SetMaxEntities(maxEntities int)
+- SetMaxDepth(maxDepth int)
+
+In the future there may be more options added. If there are more you can just add them to the New() call with
+no need to change your old code other wise.
+
+The most common options most people will likely use is quadgo.SetBounds() as your game world will likely
+not have a size of 1024x760, but this was a simple preset and allows for quick use if your bounds is in fact this size.
 
 #### Added entities to the tree
 
-To add an entity to the tree you just need to do is call Insert() like so
+The simplest way to add something to the tree is to call `tree.Insert(minX, minY, maxX, maxY, objects...)`. 
+This will insert the given data in to the tree in what ever quadrant it fits in to. When you call Insert() it takes the min and max
+bounds of the object you are trying to insert and any number of other "objects" that you may want to add to that entity. These
+objects can be anything as it will be sorted as an array of interface{}. This can be used later as a way to do an action on something
+when you retrieve an entity from the tree through something like `tree.IntersectsPoint()`.
 
-```go
-tree.Insert(bounds, object)
-```
-
-Insert() takes a Bounds structure type and an object as an interface. Anything can be put in
-as an object and it should be used as a way to store extra data in the tree. Just note that
-because you can put anything in this, if you put some large amount of data in it will make
-the tree take up large amounts of space and may slow down search and removal speeds along with
-just taking up a lot of memory.
+If you already have some quadgo.Entity items that you want to insert in to the tree you can also just call `tree.InsertEntities(entities...)`.
+This will insert any number of quadgo.Entity's in to the tree. If you do want to use this method then you will want to create your own entities.
+This can be done by calling `quadgo.NewEntity(minX, minY, maxX, maxY, objects...)`. You could also just create the entity by hand as all structs are
+exported for your convenience. Note though that the simplest way to create data is to just use the built in functions or to just insert data threw
+Insert() as it creates the entity for you.
 
 #### Removing entities from the tree
 
-To remove an entity you need to call Remove().
-
-```go
-tree.Remove(Entity)
-```
-
-Remove() will try and remove the given entity from the tree. Entity structure type
-holds the bounds for that given entity and the object that it holds.
+If you want to remove an entity from the tree you need to call `tree.Remove(entity)`. This will try and remove the given entity from the tree.
+The given entity does not need to be the exact entity you are trying to remove but rather it just has to have the same data. This means if you want to remove
+an entity from the node you just need to create an entity with the same data and call Remove() with that entity.
 
 #### Retrieving entities from the tree
 
-If you want to find entities with in the tree you just need to call Retrieve()
-
-```go
-tree.Retrieve(bounds)
-```
-
-Retrieve() returns a list of all entities that are with in the smallest leaf that the given
-bounds can fit in. This can be the easiest way to get a list of entities that reside with in
-an area of the screen.
+If you want to retrieve entities from the tree you just need to call ether `tree.RetrieveFromPoint(point)` or `tree.RetrieveFromBound(bound)`.
+Both of these functions will return a list of entities that can be found at what ever leaf node the given point or bound can fit with in.
 
 #### Checking for collisions
 
-If you want to check if a bounds collides with anything with in the tree you need to use IsIntersect()
+One of the key points of any quadtree is its collision detection, at least for games. You can check for collision with any entity with in the quadtree by
+calling `tree.IsIntersectPoint(point)` or `tree.IsIntersectBound(bound)`. These two functions function the same way, just one checks for a point collision and one
+checks if any point of the given bounds intersects anything with in the tree. These two functions return a boolean that will be true if any intersect
+is found and false if not.
 
-```go
-tree.IsIntersect(bounds)
-```
-
-This returns a true or false value for if the given bounds has intersected anything within
-the tree. This function will be the fastest way to find a collision if your using this for
-collision detection as it returns the second it finds a collision.
-
-#### Getting all collision's
-
-Lastly if you want to get a list of all collision's you need to call Intersects()
-
-```go
-tree.Intersects(bounds)
-```
-
-This functions almost identical to IsIntersects but instead of returning a true or false
-it returns a list of all Entities that have been found to collide with the given bounds.
-This will be best used if you have stored some action or data in the object field of 
-
-## TODO's
-
-- Threading (Tentitive may not be posible or worth doing. Currently under heavy reserch and testing)
-- ...
+Another important function is the `tree.IntersectsPoint(point)` and `tree.IntersectsBound(bound)`. These two functions are almost the exact same as 
+IsIntersectPoint and IsIntersectBound but rather then returning a boolean it returns a list of all entities that the given point or bound intersects with.
 
 ## License
 
