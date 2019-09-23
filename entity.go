@@ -1,12 +1,40 @@
 package quadgo
 
 import (
+	"errors"
 	"fmt"
-	"math"
 )
 
 // Entities is a list of entities.
 type Entities []*Entity
+
+// Remove removes finds and removes the given entity from the list of entities.
+// remove returns the new list of entities and an error if the given entity can not be found in the list of entities.
+func (e Entities) Remove(entity *Entity) (Entities, error) {
+	// check the entities in leaf for given entity
+	for i := range e {
+		// check if given entity is the same as nodes entity
+		if e[i].IsEqual(entity) {
+			// check if removal would make the leaf have no entities
+			if len(e) == 1 {
+				// set node entities to an empty slice
+				e = e[:0]
+			} else if len(e) == i+1 {
+				// remove last entity from node
+				e = e[:i]
+			} else {
+				// remove entity from node
+				e = append(e[:i], e[i+1:]...)
+			}
+			return e, nil
+		}
+	}
+
+	return nil, errors.New("could not find entity in tree to remove")
+}
+
+// Action is a function type that can be given to a entity to be executed later.
+type Action func()
 
 // Entity is the basic Entity stricture type for QuadGo.
 //
@@ -15,67 +43,45 @@ type Entities []*Entity
 type Entity struct {
 	Bound
 
-	Objects []interface{}
+	Action Action
 }
 
 // NewEntity creates a new entity from the given min and max points and any given objects.
 //
 // The given objects can be any data that you want to hold with in the entity for the given bounds.
-func NewEntity(minX, minY, maxX, maxY float64, objs ...interface{}) *Entity {
+func NewEntity(minX, minY, maxX, maxY float64) *Entity {
 	return &Entity{
-		Bound:   NewBound(minX, minY, maxX, maxY),
-		Objects: objs,
+		Bound:  NewBound(minX, minY, maxX, maxY),
+		Action: nil,
 	}
+}
+
+// NewEntityWithAction creates a new entity with the given min and max x and y positions of its bounds
+// along with an Action function.
+//
+// Example:
+//	quadgo.NewEntityWithAction(0, 0, 50, 50, func(){
+//		fmt.Println("hello from an action")
+//	})
+func NewEntityWithAction(minX, minY, maxX, maxY float64, action Action) *Entity {
+	return &Entity{
+		Bound:  NewBound(minX, minY, maxX, maxY),
+		Action: action,
+	}
+}
+
+// SetAction sets an entities action function.
+func (e *Entity) SetAction(action Action) {
+	e.Action = action
+}
+
+// IsEqual checks if the given entities bound is equal to this entities bound.
+//
+// IsEqual ignores the action function in comparison as you can not compare anonymous functions.
+func (e *Entity) IsEqual(entity *Entity) bool {
+	return e.Bound.IsEqual(entity.Bound)
 }
 
 func (e *Entity) String() string {
-	return fmt.Sprintf("Bounds: %v\n Objects: %v\n", e.Bound, e.Objects)
-}
-
-// Bound is the basic rectangular bounds for nodes and entities in QuadGo.
-type Bound struct {
-	Min, Max, Center Point
-	Width, Height    float64
-}
-
-var ZB = Bound{}
-
-// NewBound creates a new Bound struct from the given min and max points.
-//
-// Note: QuadGo format has min as the bottom left and max as top right.
-func NewBound(minX, minY, maxX, maxY float64) Bound {
-	w := math.Abs(maxX) - math.Abs(minX)
-	h := math.Abs(maxY) - math.Abs(minY)
-	return Bound{
-		Min:    Point{X: minX, Y: minY},
-		Max:    Point{X: maxX, Y: maxY},
-		Center: Point{X: maxX - (w / 2), Y: maxY - (h / 2)},
-		Width:  w,
-		Height: h,
-	}
-}
-
-// IsIntersectBound returns whether or not the given Bound intersects with this bound.
-func (b Bound) IsIntersectBound(bounds Bound) bool {
-	return !(bounds.Max.X < b.Min.X || bounds.Min.X > b.Max.X || bounds.Max.Y < b.Min.Y || bounds.Min.Y > b.Max.Y)
-}
-
-// IsIntersectPoint returns whether or not the given point intersects with this bound.
-func (b Bound) IsIntersectPoint(point Point) bool {
-	return !(point.X < b.Min.X || point.X > b.Max.X || point.Y < b.Min.Y || point.Y > b.Max.Y)
-}
-
-func (b Bound) String() string {
-	return fmt.Sprintf("Min: %v, Max: %v, Center: %v\n Width: %v, Height %v\n", b.Min, b.Max, b.Center, b.Width, b.Height)
-}
-
-// Point is the basic X Y coordinate structure for QuadGo
-type Point struct {
-	X, Y float64
-}
-
-var ZP = Point{}
-
-func (p Point) String() string {
-	return fmt.Sprintf("X: %v, Y: %v", p.X, p.Y)
+	return fmt.Sprintf("Bounds: %v\n Objects: %v\n", e.Bound, e.Action)
 }

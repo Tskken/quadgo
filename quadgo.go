@@ -3,7 +3,6 @@ package quadgo
 import (
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 // quadrant type for iota child quadrants.
@@ -11,10 +10,10 @@ type quadrant uint8
 
 // constant values for child quadrants.
 const (
-	bottomLeft quadrant = iota
-	bottomRight
-	topLeft
+	topLeft quadrant = iota
 	topRight
+	bottomLeft
+	bottomRight
 )
 
 // Option function type for setting the Options of a new tree.
@@ -22,35 +21,25 @@ type Option func(*Options)
 
 // Options struct which holds all the information for creating a new quadtree with its given information.
 type Options struct {
-	Width, Height         float64
-	MaxEntities, MaxDepth int
+	MaxEntities uint64
+	MaxDepth    uint16
 }
 
 // defaultOptions for QuadGo
 var defaultOption = &Options{
-	Width:       1024,
-	Height:      768,
 	MaxEntities: 10,
 	MaxDepth:    2,
 }
 
-// SetBounds sets the bounds for the new tree.
-func SetBounds(width, height float64) Option {
-	return func(o *Options) {
-		o.Width = width
-		o.Height = height
-	}
-}
-
 // SetMaxEntities sets the max number of entities per each node in the new tree.
-func SetMaxEntities(maxEntities int) Option {
+func SetMaxEntities(maxEntities uint64) Option {
 	return func(o *Options) {
 		o.MaxEntities = maxEntities
 	}
 }
 
 // SetMaxDepth sets the max depth that the tree can splitAndMove to.
-func SetMaxDepth(maxDepth int) Option {
+func SetMaxDepth(maxDepth uint16) Option {
 	return func(o *Options) {
 		o.MaxDepth = maxDepth
 	}
@@ -60,17 +49,19 @@ func SetMaxDepth(maxDepth int) Option {
 type QuadGo struct {
 	*node
 
-	maxDepth int
+	maxDepth uint16
 }
 
 // New creates the basic QuadGo instance.
 //
-// You can give New() any number of Option functions to change the desired settings of the tree.
-// The main function to use would be SetBound(width, height). This function will set the new trees root bounds to be
-// the given width and height.
+// New requires a width and a height but can also be given any number of other supported option functions.
 //
-// If no Options are given the default is a bounds of 1024x768, max entities per node of 10, and max depth of 2.
-func New(ops ...Option) *QuadGo {
+// Example:
+//	basic - quadgo.New(800, 600)
+// 	with option - quadgo.New(800, 600, SetMaxDepth(5))
+//
+// QuadGo sets the New defaults for max depth to 2 and max entities to 10.
+func New(width, height float64, ops ...Option) *QuadGo {
 	// copy defaults
 	o := defaultOption
 
@@ -83,7 +74,7 @@ func New(ops ...Option) *QuadGo {
 	return &QuadGo{
 		node: &node{
 			parent:   nil,
-			bounds:   NewBound(0, 0, o.Width, o.Height),
+			bound:    NewBound(0, 0, width, height),
 			entities: make(Entities, 0, o.MaxEntities),
 			children: make(nodes, 0, 4),
 			depth:    0,
@@ -92,13 +83,14 @@ func New(ops ...Option) *QuadGo {
 	}
 }
 
-// Insert takes the new entities Min and Max xy coordinates and inserts it in to the quadtree.
-// It also takes any number of objects of any type as extra data to store with in the entity.
-//
-// The objects given can be any data type you may want to store in the entity.
-// When searching the tree it will return an entity which holds the objects provided.
-func (q *QuadGo) Insert(minX, minY, maxX, maxY float64, objs ...interface{}) error {
-	return q.insert(NewEntity(minX, minY, maxX, maxY, objs), q.maxDepth)
+// Insert takes a new entities Min and Max xy bounds and inserts it in to the quadtree.
+func (q *QuadGo) Insert(minX, minY, maxX, maxY float64) error {
+	return q.insert(NewEntity(minX, minY, maxX, maxY), q.maxDepth)
+}
+
+// InsertWithAction takes a new entities Min and Max xy bounds and a Action function and inserts it in to the quadtree.
+func (q *QuadGo) InsertWithAction(minX, minY, maxX, maxY float64, action Action) error {
+	return q.insert(NewEntityWithAction(minX, minY, maxX, maxY, action), q.maxDepth)
 }
 
 // InsertEntities inserts any number of entities in to the quadtree.
@@ -213,11 +205,22 @@ type nodes []*node
 
 // node is the container that holds the branch and leaf data for the tree.
 type node struct {
-	parent   *node
-	bounds   Bound
-	entities []*Entity
-	children []*node
-	depth    int
+	parent     *node
+	bound      Bound
+	entities   Entities
+	children   nodes
+	depth, max uint16
+}
+
+// new creates a new node instance for a given bounds taking the parent nodes root.
+func (n *node) new(bound Bound) *node {
+	return &node{
+		parent:   n,
+		bound:    bound,
+		entities: make(Entities, 0, cap(n.entities)),
+		children: make(nodes, 0, 4),
+		depth:    n.depth + 1,
+	}
 }
 
 // retrieve finds all of the entities with in a quadrant that the given point fits in.
@@ -230,35 +233,37 @@ func (n *node) retrieve(point Point) (e Entities) {
 		}
 		// return an empty list for no quadrant found for given point
 		return
-	} else {
-		// return entities from leaf
-		return n.entities
 	}
+
+	// return entities from leaf
+	return n.entities
 }
 
 // insert inserts a given entity in to the quadtree.
-func (n *node) insert(entity *Entity, maxDepth int) error {
+func (n *node) insert(entity *Entity, maxDepth uint16) error {
 	// check if you are on a leaf node or at max depth of the tree
-	if len(n.children) > 0 && n.depth <= maxDepth {
+	if len(n.children) > 0 && n.depth <= n.max {
 		// get the next node that the given entity fits in and attempt to insert it
 		if node := n.getQuadrant(entity.Center); node != nil {
 			return node.insert(entity, maxDepth)
-		} else {
-			// return an error for no quadrants found for given entity
-			// NOTE! this section of code should never be hit but it exist as a safe guard
-			return fmt.Errorf("could not find a quadrent for the given entity: %v", entity)
 		}
-	} else {
-		// check if a splitAndMove is needed
-		if len(n.entities)+1 > cap(n.entities) && n.depth < maxDepth {
-			// split node in to child nodes and add this nodes entities in to the appropriate child nodes
-			return n.splitAndMove(append(n.entities, entity), maxDepth)
-		} else {
-			// add Entity to node
-			n.entities = append(n.entities, entity)
-			return nil
-		}
+
+		// return an error for no quadrants found
+		return errors.New("returned node from getQuadrant was nil")
 	}
+
+	// check if a splitAndMove is needed
+	if len(n.entities)+1 > cap(n.entities) && n.depth < n.max {
+		// split node in to child nodes
+		n.split()
+
+		// move this nodes entities to the children nodes
+		return n.MoveEntities(append(n.entities, entity), maxDepth)
+	}
+
+	// add Entity to node
+	n.entities = append(n.entities, entity)
+	return nil
 }
 
 // remove removes the given Entity from the quadtree.
@@ -268,41 +273,30 @@ func (n *node) remove(entity *Entity) error {
 		// get the next node that the given entity fits in and attempt to remove it
 		if node := n.getQuadrant(entity.Center); node != nil {
 			return node.remove(entity)
-		} else {
-			// return an error for no quadrants found for given entity
-			// NOTE! this section of code should never be hit but it exist as a safe guard
-			return fmt.Errorf("could not find a quadrent for the given entity: %v", entity)
 		}
-	} else {
-		// check the entities in leaf for given entity
-		for i := range n.entities {
-			// check if given entity is the same as nodes entity
-			if reflect.DeepEqual(n.entities[i], entity) {
-				// check if removal would make the leaf have no entities
-				if len(n.entities) == 1 {
-					// set node entities to an empty slice
-					n.entities = n.entities[:0]
-				} else {
-					// remove Entity from node
-					n.entities = append(n.entities[:i], n.entities[i+1:]...)
-				}
-
-				// check if your at root and can no longer collapseAndMove
-				if n.parent != nil {
-					// check if children can be collapsed in to parent node
-					n.parent.collapseAndMove()
-				}
-				return nil
-			}
-		}
-		return errors.New("could not find entity given in tree to remove")
+		// return an error for no quadrants found for given entity
+		return fmt.Errorf("could not find a quadrent for the given entity: %v", entity)
 	}
+
+	entities, err := n.entities.Remove(entity)
+	if err != nil {
+		return err
+	}
+
+	n.entities = entities
+
+	if n.parent != nil {
+		// check if children can be collapsed in to parent node
+		if n.parent.shouldCollapse() {
+			n.parent.collapse()
+		}
+	}
+
+	return nil
 }
 
-// collapseAndMove checks if a parent's children hold less entities then the set maxEntities count.
-// if the count is less then maxEntities it collapses all children in to the parent node, copying
-// all of there entities to the parent node and setting the children to new empty slices.
-func (n *node) collapseAndMove() {
+// shouldCollapse checks if the nodes children should be collapsed in to the parent.
+func (n *node) shouldCollapse() bool {
 	// create base counter for children entity count
 	eCount := 0
 
@@ -311,17 +305,18 @@ func (n *node) collapseAndMove() {
 		eCount += len(n.children[i].entities)
 	}
 
-	// check if the total number of entities in the nodes children is less then the
-	// Max number of entities allowed in a node
-	if eCount < cap(n.entities) {
-		// move children entities to parent node
-		for i := range n.children {
-			n.entities = append(n.entities, n.children[i].entities...)
-		}
+	return eCount < cap(n.entities)
+}
 
-		// reset children
-		n.children = n.children[:0]
+// collapse takes all entities from the children nodes and moves them to the parent and then removes the children.
+func (n *node) collapse() {
+	// move children entities to parent node
+	for i := range n.children {
+		n.entities = append(n.entities, n.children[i].entities...)
 	}
+
+	// remove children
+	n.children = n.children[:0]
 }
 
 // isEntity returns if a given entity exists in the tree.
@@ -332,7 +327,7 @@ func (n *node) isEntity(entity *Entity) bool {
 	// check each entity for if it is equal to given entity
 	for i := range entities {
 		// check if given Entity equals given entity
-		if reflect.DeepEqual(entities[i], entity) {
+		if entities[i].IsEqual(entity) {
 			return true
 		}
 	}
@@ -340,80 +335,45 @@ func (n *node) isEntity(entity *Entity) bool {
 	return false
 }
 
-// splitAndMove creates the children for a node by subdividing the nodes boundaries in to 4 even quadrants. It then
-// adds the nodes entities to the new child nodes.
-func (n *node) splitAndMove(entities Entities, maxDepth int) error {
-	// Bottom Left child node
-	n.children = append(n.children, &node{
-		parent:   n,
-		bounds:   NewBound(n.bounds.Min.X, n.bounds.Min.Y, n.bounds.Center.X, n.bounds.Center.Y),
-		entities: make(Entities, 0, cap(n.entities)),
-		children: make(nodes, 0, 4),
-		depth:    n.depth + 1,
-	})
-
-	// Bottom Right child node
-	n.children = append(n.children, &node{
-		parent:   n,
-		bounds:   NewBound(n.bounds.Center.X, n.bounds.Min.Y, n.bounds.Max.X, n.bounds.Center.Y),
-		entities: make(Entities, 0, cap(n.entities)),
-		children: make(nodes, 0, 4),
-		depth:    n.depth + 1,
-	})
-
+// split creates the children node for this node.
+func (n *node) split() {
 	// Top Left child node
-	n.children = append(n.children, &node{
-		parent:   n,
-		bounds:   NewBound(n.bounds.Min.X, n.bounds.Center.Y, n.bounds.Center.X, n.bounds.Max.Y),
-		entities: make(Entities, 0, cap(n.entities)),
-		children: make(nodes, 0, 4),
-		depth:    n.depth + 1,
-	})
+	n.children = append(n.children, n.new(NewBound(n.bound.Min.X, n.bound.Center.Y, n.bound.Center.X, n.bound.Max.Y)))
 
 	// Top Right child node
-	n.children = append(n.children, &node{
-		parent:   n,
-		bounds:   NewBound(n.bounds.Center.X, n.bounds.Center.Y, n.bounds.Max.X, n.bounds.Max.Y),
-		entities: make(Entities, 0, cap(n.entities)),
-		children: make(nodes, 0, 4),
-		depth:    n.depth + 1,
-	})
+	n.children = append(n.children, n.new(NewBound(n.bound.Center.X, n.bound.Center.Y, n.bound.Max.X, n.bound.Max.Y)))
 
+	// Bottom Left child node
+	n.children = append(n.children, n.new(NewBound(n.bound.Min.X, n.bound.Min.Y, n.bound.Center.X, n.bound.Center.Y)))
+
+	// Bottom Right child node
+	n.children = append(n.children, n.new(NewBound(n.bound.Center.X, n.bound.Min.Y, n.bound.Max.X, n.bound.Center.Y)))
+}
+
+func (n *node) MoveEntities(entities Entities, maxDepth uint16) error {
 	// loop through all entities to add them to there appropriate child node
 	for i := range entities {
 		// get the next node that the given entity fits in and insert it
-		if node := n.getQuadrant(entities[i].Center); node != nil {
-			err := node.insert(entities[i], maxDepth)
-			if err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("could not find a quadrent for the given entity: %v", entities[i])
+		err := n.insert(entities[i], maxDepth)
+		if err != nil {
+			return err
 		}
 	}
 
 	// clear entities for branch node
-	n.entities = make(Entities, 0, cap(n.entities))
+	n.entities = n.entities[:0]
 	return nil
 }
 
-// getQuadrant returns the nodes child node that the given point fits within.
+// getQuadrant returns this nodes child node that the given point fits within.
 func (n *node) getQuadrant(point Point) *node {
-	switch {
-	// bottom left node check
-	case point.X <= n.bounds.Center.X && point.Y <= n.bounds.Center.Y:
-		return n.children[bottomLeft]
-	// bottom right node check
-	case point.X > n.bounds.Center.X && point.Y <= n.bounds.Center.Y:
-		return n.children[bottomRight]
-	// top left node check
-	case point.X <= n.bounds.Center.X && point.Y > n.bounds.Center.Y:
-		return n.children[topLeft]
-	// top right node check
-	case point.X > n.bounds.Center.X && point.Y > n.bounds.Center.Y:
-		return n.children[topRight]
-	// default should never trigger as there should never be a point were the given point can not fit in any child node
-	default:
-		return nil
+	if n.bound.Center.X < point.X && n.bound.Center.Y >= point.Y {
+		return n.children[topLeft] // return top left
+	} else if n.bound.Center.X >= point.X && n.bound.Center.Y >= point.Y {
+		return n.children[topRight] // return top right
+	} else if n.bound.Center.X < point.X && n.bound.Center.Y < point.Y {
+		return n.children[bottomLeft] // return bottom left
+	} else {
+		return n.children[bottomRight] // return bottom right
 	}
 }

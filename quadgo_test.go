@@ -1,6 +1,7 @@
 package quadgo
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -123,7 +124,7 @@ func TestNew(t *testing.T) {
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, defaultOption.Width, defaultOption.Height),
+					bound:    NewBound(0, 0, defaultOption.Width, defaultOption.Height),
 					entities: make(Entities, 0, defaultOption.MaxEntities),
 					children: make(nodes, 0, 4),
 					depth:    0,
@@ -141,7 +142,7 @@ func TestNew(t *testing.T) {
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, 1920, 1080),
+					bound:    NewBound(0, 0, 1920, 1080),
 					entities: make(Entities, 0, defaultOption.MaxEntities),
 					children: make(nodes, 0, 4),
 					depth:    0,
@@ -161,7 +162,7 @@ func TestNew(t *testing.T) {
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, 1920, 1080),
+					bound:    NewBound(0, 0, 1920, 1080),
 					entities: make(Entities, 0, 5),
 					children: make(nodes, 0, 4),
 					depth:    0,
@@ -188,7 +189,6 @@ func TestQuadGo_Insert(t *testing.T) {
 		minY float64
 		maxX float64
 		maxY float64
-		objs []interface{}
 	}
 	tests := []struct {
 		name    string
@@ -199,7 +199,7 @@ func TestQuadGo_Insert(t *testing.T) {
 		{
 			name: "basic insert",
 			args: []args{
-				{0, 0, 50, 50, nil},
+				{0, 0, 50, 50},
 			},
 			wantErr: false,
 		},
@@ -211,9 +211,9 @@ func TestQuadGo_Insert(t *testing.T) {
 				},
 			},
 			args: []args{
-				{0, 0, 50, 50, nil},
-				{500, 500, 700, 700, nil},
-				{700, 800, 900, 1000, nil},
+				{0, 0, 50, 50},
+				{500, 500, 700, 700},
+				{700, 800, 900, 1000},
 			},
 			wantErr: false,
 		},
@@ -226,10 +226,10 @@ func TestQuadGo_Insert(t *testing.T) {
 				},
 			},
 			args: []args{
-				{0, 0, 50, 50, nil},
-				{51, 51, 100, 100, nil},
-				{0, 51, 50, 100, nil},
-				{51, 0, 100, 50, nil},
+				{0, 0, 50, 50},
+				{51, 51, 100, 100},
+				{0, 51, 50, 100},
+				{51, 0, 100, 50},
 			},
 			wantErr: false,
 		},
@@ -238,7 +238,45 @@ func TestQuadGo_Insert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := New(tt.fields.options...)
 			for _, a := range tt.args {
-				if err := q.Insert(a.minX, a.minY, a.maxX, a.maxY, a.objs...); (err != nil) != tt.wantErr {
+				if err := q.Insert(a.minX, a.minY, a.maxX, a.maxY); (err != nil) != tt.wantErr {
+					t.Errorf("QuadGo.Insert() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			}
+
+		})
+	}
+}
+
+func TestQuadGo_InsertWithAction(t *testing.T) {
+	type fields struct {
+		options []Option
+	}
+	type args struct {
+		minX   float64
+		minY   float64
+		maxX   float64
+		maxY   float64
+		action Action
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    []args
+		wantErr bool
+	}{
+		{
+			name: "basic insert",
+			args: []args{
+				{0, 0, 50, 50, func() { fmt.Println("basic insert action function") }},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := New(tt.fields.options...)
+			for _, a := range tt.args {
+				if err := q.InsertWithAction(a.minX, a.minY, a.maxX, a.maxY, a.action); (err != nil) != tt.wantErr {
 					t.Errorf("QuadGo.Insert() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}

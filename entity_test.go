@@ -34,8 +34,6 @@ func TestNewEntity(t *testing.T) {
 					Center: Point{
 						float64(25) / 2, float64(25) / 2,
 					},
-					Width:  25,
-					Height: 25,
 				},
 				Objects: nil,
 			},
