@@ -8,9 +8,9 @@ import (
 // Entities is a list of entities.
 type Entities []*Entity
 
-// Remove removes finds and removes the given entity from the list of entities.
+// FindAndRemove finds and removes the given entity from the list of entities.
 // remove returns the new list of entities and an error if the given entity can not be found in the list of entities.
-func (e Entities) Remove(entity *Entity) (Entities, error) {
+func (e Entities) FindAndRemove(entity *Entity) (Entities, error) {
 	// check the entities in leaf for given entity
 	for i := range e {
 		// check if given entity is the same as nodes entity
@@ -33,6 +33,81 @@ func (e Entities) Remove(entity *Entity) (Entities, error) {
 	return nil, errors.New("could not find entity in tree to remove")
 }
 
+// Contains checks if the given entity exists with in the list of entities.
+func (e Entities) Contains(entity *Entity) bool {
+	// check each entity for if it is equal to given entity
+	for i := range e {
+		// check if given Entity equals given entity
+		if e[i].IsEqual(entity) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isIntersectPoint finds if a given point intersects any entities  in
+// the list of entities. It returns a bool on an output chan for running on a
+// secondary thread.
+func (e Entities) isIntersectPoint(point Point, out chan<- bool) {
+	// check if any entities returned intersect the given point
+	for i := range e {
+		// check for intersect
+		if e[i].IsIntersectPoint(point) {
+			out <- true
+		}
+	}
+	out <- false
+}
+
+// isIntersectBound finds if a given bound intersects any entities  in
+// the list of entities. It returns a bool on an output chan for running on a
+// secondary thread.
+func (e Entities) isIntersectBound(bound Bound, out chan<- bool) {
+	// check if any entities returned intersect the given point
+	for i := range e {
+		// check for intersect
+		if e[i].IsIntersectBound(bound) {
+			out <- true
+		}
+	}
+	out <- false
+}
+
+// isIntersectsPoint finds if a given point intersects any entities  in
+// the list of entities. It returns a list of intersected entities
+// on an output chan for running on a secondary thread.
+func (e Entities) intersectsPoint(point Point, out chan<- Entities) {
+	entities := make(Entities, 0, cap(e))
+
+	// check if any entities returned intersect the given point and if they do add them to the return list
+	for i := range e {
+		// add to list if they intersect
+		if e[i].IsIntersectPoint(point) {
+			entities = append(entities, e[i])
+		}
+	}
+
+	out <- entities
+}
+
+// isIntersectsBound finds if a given Bound intersects any entities  in
+// the list of entities. It returns a list of intersected entities
+// on an output chan for running on a secondary thread.
+func (e Entities) intersectsBound(bound Bound, out chan<- Entities) {
+	entities := make(Entities, 0, cap(e))
+
+	// check if any entities returned intersect the given point and if they do add them to the return list
+	for i := range e {
+		// add to list if they intersect
+		if e[i].IsIntersectBound(bound) {
+			entities = append(entities, e[i])
+		}
+	}
+
+	out <- entities
+}
+
 // Action is a function type that can be given to a entity to be executed later.
 type Action func()
 
@@ -42,8 +117,7 @@ type Action func()
 // any data that you would want to store in the entity.
 type Entity struct {
 	Bound
-
-	Action Action
+	Action
 }
 
 // NewEntity creates a new entity from the given min and max points and any given objects.
@@ -83,5 +157,5 @@ func (e *Entity) IsEqual(entity *Entity) bool {
 }
 
 func (e *Entity) String() string {
-	return fmt.Sprintf("Bounds: %v\n Objects: %v\n", e.Bound, e.Action)
+	return fmt.Sprintf("Bounds: %v Action: %v\n", e.Bound, e.Action)
 }
