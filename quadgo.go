@@ -1,3 +1,7 @@
+// Copyright 2019 Tskken. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+//
 // Package quadgo provides a basic quad-tree implementation for
 // game collision detection. It provides most standard read and write
 // operations for a quad-tree. The main uses cases would be using quadgo
