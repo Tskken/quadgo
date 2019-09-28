@@ -19,17 +19,6 @@ import (
 	"errors"
 )
 
-// quadrant type for iota child quadrants.
-type quadrant uint8
-
-// constant values for child quadrants.
-const (
-	topLeft quadrant = iota
-	topRight
-	bottomLeft
-	bottomRight
-)
-
 // Option function type for setting the options of a new tree.
 type Option func(*options)
 

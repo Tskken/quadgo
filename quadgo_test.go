@@ -333,7 +333,7 @@ func TestQuadGo_Insert(t *testing.T) {
 				for _, e := range <-tt.fields.quadgo.Retrieve(wnt.Bound) {
 					if e.Bound.IsEqual(wnt.Bound) {
 						found = true
-						return
+						break
 					}
 				}
 
