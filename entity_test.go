@@ -1,9 +1,612 @@
+// Copyright 2019 Tskken. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package quadgo
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 )
+
+func TestEntities_FindAndRemove(t *testing.T) {
+	type fields struct {
+		entities Entities
+	}
+	type args struct {
+		entity *Entity
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    Entities
+		wantErr error
+	}{
+		{
+			name: "basic remove from list of 3",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 60,
+								Y: 60,
+							},
+							Max: Point{
+								X: 800,
+								Y: 800,
+							},
+						},
+						Action: nil,
+					},
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 20,
+								Y: 20,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 60,
+							Y: 60,
+						},
+						Max: Point{
+							X: 800,
+							Y: 800,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want: Entities{
+				&Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+				&Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 20,
+							Y: 20,
+						},
+					},
+					Action: nil,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "remove from only 1 item list",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want:    Entities{},
+			wantErr: nil,
+		},
+		{
+			name: "remove last item in list",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 60,
+								Y: 60,
+							},
+							Max: Point{
+								X: 100,
+								Y: 100,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 60,
+							Y: 60,
+						},
+						Max: Point{
+							X: 100,
+							Y: 100,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want: Entities{
+				&Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "could not find item in list error",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 60,
+								Y: 60,
+							},
+							Max: Point{
+								X: 100,
+								Y: 100,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 60,
+						},
+						Max: Point{
+							X: 100,
+							Y: 100,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want:    nil,
+			wantErr: errors.New("could not find entity in tree to remove"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ent, err := tt.fields.entities.FindAndRemove(tt.args.entity)
+			if !reflect.DeepEqual(ent, tt.want) || !reflect.DeepEqual(tt.wantErr, err) {
+				t.Errorf("Entities.FindAndRemove() = %v, %v, wanted %v, %v", ent, err, tt.want, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEntities_Contains(t *testing.T) {
+	type fields struct {
+		entities Entities
+	}
+	type args struct {
+		entity *Entity
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "basic find true",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				&Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: " not found",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				&Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 10,
+							Y: 10,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fields.entities.Contains(tt.args.entity); got != tt.want {
+				t.Errorf("Entities.Contains() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEntities_isIntersect(t *testing.T) {
+	type fields struct {
+		entities Entities
+	}
+	type args struct {
+		bound Bound
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "intersect bound true",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+							Center: Point{
+								X: 25,
+								Y: 25,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				bound: Bound{
+					Min: Point{
+						X: 10,
+						Y: 10,
+					},
+					Max: Point{
+						X: 40,
+						Y: 40,
+					},
+					Center: Point{
+						X: 25,
+						Y: 25,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "intersect bound false",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+							Center: Point{
+								X: 25,
+								Y: 25,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				bound: Bound{
+					Min: Point{
+						X: 100,
+						Y: 100,
+					},
+					Max: Point{
+						X: 150,
+						Y: 150,
+					},
+					Center: Point{
+						X: 125,
+						Y: 125,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fields.entities.isIntersect(tt.args.bound); got != tt.want {
+				t.Errorf("Entities.isIntersect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEntities_intersects(t *testing.T) {
+	type fields struct {
+		entities Entities
+	}
+	type args struct {
+		bound Bound
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   Entities
+	}{
+		{
+			name: "intersect bound true",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						ID: 1,
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+							Center: Point{
+								X: 25,
+								Y: 25,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				bound: Bound{
+					Min: Point{
+						X: 10,
+						Y: 10,
+					},
+					Max: Point{
+						X: 40,
+						Y: 40,
+					},
+					Center: Point{
+						X: 25,
+						Y: 25,
+					},
+				},
+			},
+			want: Entities{
+				&Entity{
+					ID: 1,
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+						Center: Point{
+							X: 25,
+							Y: 25,
+						},
+					},
+					Action: nil,
+				},
+			},
+		},
+		{
+			name: "intersect bound false",
+			fields: fields{
+				entities: Entities{
+					&Entity{
+						ID: 1,
+						Bound: Bound{
+							Min: Point{
+								X: 0,
+								Y: 0,
+							},
+							Max: Point{
+								X: 50,
+								Y: 50,
+							},
+							Center: Point{
+								X: 25,
+								Y: 25,
+							},
+						},
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				bound: Bound{
+					Min: Point{
+						X: 100,
+						Y: 100,
+					},
+					Max: Point{
+						X: 150,
+						Y: 150,
+					},
+					Center: Point{
+						X: 125,
+						Y: 125,
+					},
+				},
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.fields.entities.intersects(tt.args.bound)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Entities.intersectBound() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestNewEntity(t *testing.T) {
 	type args struct {
@@ -11,7 +614,6 @@ func TestNewEntity(t *testing.T) {
 		minY float64
 		maxX float64
 		maxY float64
-		objs []interface{}
 	}
 	tests := []struct {
 		name string
@@ -21,7 +623,7 @@ func TestNewEntity(t *testing.T) {
 		{
 			name: "basic new entity",
 			args: args{
-				0, 0, 25, 25, nil,
+				0, 0, 25, 25,
 			},
 			want: &Entity{
 				Bound: Bound{
@@ -34,133 +636,134 @@ func TestNewEntity(t *testing.T) {
 					Center: Point{
 						float64(25) / 2, float64(25) / 2,
 					},
-					Width:  25,
-					Height: 25,
 				},
-				Objects: nil,
-			},
-		},
-		{
-			name: "object function on new entity",
-			args: args{
-				0, 0, 25, 25, []interface{}{
-					struct {
-						name string
-					}{"test struct object"},
-				},
-			},
-			want: &Entity{
-				Bound: Bound{
-					Min: Point{
-						0, 0,
-					},
-					Max: Point{
-						25, 25,
-					},
-					Center: Point{
-						float64(25) / 2, float64(25) / 2,
-					},
-					Width:  25,
-					Height: 25,
-				},
-				Objects: []interface{}{
-					struct {
-						name string
-					}{"test struct object"},
-				},
+				Action: nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewEntity(tt.args.minX, tt.args.minY, tt.args.maxX, tt.args.maxY, tt.args.objs...); !reflect.DeepEqual(got, tt.want) {
+			if got := NewEntity(tt.args.minX, tt.args.minY, tt.args.maxX, tt.args.maxY); !got.Bound.IsEqual(tt.want.Bound) {
 				t.Errorf("NewEntity() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestEntity_String(t *testing.T) {
-	type fields struct {
-		Bound   Bound
-		Objects []interface{}
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name: "entity to string",
-			fields: fields{
-				Bound: Bound{
-					Min:    Point{0, 0},
-					Max:    Point{50, 50},
-					Center: Point{25, 25},
-					Width:  50,
-					Height: 50,
-				},
-				Objects: nil,
-			},
-			want: "Bounds: Min: X: 0, Y: 0, Max: X: 50, Y: 50, Center: X: 25, Y: 25\n Width: 50, Height 50\n\n Objects: []\n",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &Entity{
-				Bound:   tt.fields.Bound,
-				Objects: tt.fields.Objects,
-			}
-			if got := e.String(); got != tt.want {
-				t.Errorf("Entity.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNewBound(t *testing.T) {
+func TestNewEntityWithAction(t *testing.T) {
 	type args struct {
-		minX float64
-		minY float64
-		maxX float64
-		maxY float64
+		minX   float64
+		minY   float64
+		maxX   float64
+		maxY   float64
+		action Action
 	}
 	tests := []struct {
 		name string
 		args args
-		want Bound
+		want *Entity
 	}{
 		{
-			name: "new bounds",
-			args: args{0, 0, 50, 50},
-			want: Bound{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
+			name: "basic new entity",
+			args: args{
+				minX:   0,
+				minY:   0,
+				maxX:   50,
+				maxY:   50,
+				action: func() { fmt.Println("this is a test func on action") },
+			},
+			want: &Entity{
+				Bound: Bound{
+					Min: Point{
+						X: 0,
+						Y: 0,
+					},
+					Max: Point{
+						X: 50,
+						Y: 50,
+					},
+					Center: Point{
+						X: 25,
+						Y: 25,
+					},
+				},
+				Action: func() { fmt.Println("this is a test func on action") },
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewBound(tt.args.minX, tt.args.minY, tt.args.maxX, tt.args.maxY); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewBound() = %v, want %v", got, tt.want)
+			if got := NewEntityWithAction(tt.args.minX, tt.args.minY, tt.args.maxX, tt.args.maxY, tt.args.action); !got.Bound.IsEqual(tt.want.Bound) || got.Action == nil {
+				t.Errorf("NewEntity() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestBound_IsIntersectBound(t *testing.T) {
+func TestEntity_SetAction(t *testing.T) {
 	type fields struct {
-		Min    Point
-		Max    Point
-		Center Point
-		Width  float64
-		Height float64
+		entity *Entity
 	}
 	type args struct {
-		bounds Bound
+		action Action
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *Entity
+	}{
+		{
+			name: "basic set action function",
+			fields: fields{
+				entity: &Entity{
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
+			},
+			args: args{
+				action: func() { fmt.Println("test set action action function.") },
+			},
+			want: &Entity{
+				Bound: Bound{
+					Min: Point{
+						X: 0,
+						Y: 0,
+					},
+					Max: Point{
+						X: 50,
+						Y: 50,
+					},
+				},
+				Action: func() { fmt.Println("test set action action function.") },
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.fields.entity.SetAction(tt.args.action); tt.fields.entity.Action == nil {
+				t.Errorf("Entity.SetAction() = %v, want %v", tt.fields.entity, tt.want)
+			}
+		})
+	}
+}
+
+func TestEntity_IsEqual(t *testing.T) {
+	type fields struct {
+		entity *Entity
+	}
+	type args struct {
+		entity *Entity
 	}
 	tests := []struct {
 		name   string
@@ -169,190 +772,120 @@ func TestBound_IsIntersectBound(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "is intersected test",
+			name: "is equal true",
 			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
+				entity: &Entity{
+					ID: 1,
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
 			},
 			args: args{
-				bounds: Bound{
-					Min:    Point{5, 5},
-					Max:    Point{15, 15},
-					Center: Point{float64(15 - (10 / 2)), float64(15 - (10 / 2))},
-					Width:  10,
-					Height: 10,
+				entity: &Entity{
+					ID: 1,
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
 				},
 			},
 			want: true,
 		},
 		{
-			name: "is not interacted test",
+			name: "is equal false",
 			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
+				entity: &Entity{
+					ID: 2,
+					Bound: Bound{
+						Min: Point{
+							X: 0,
+							Y: 0,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
+				},
 			},
 			args: args{
-				bounds: Bound{
-					Min:    Point{55, 55},
-					Max:    Point{105, 105},
-					Center: Point{float64(105 - 25), float64(105 - 25)},
-					Width:  25,
-					Height: 25,
+				entity: &Entity{
+					ID: 1,
+					Bound: Bound{
+						Min: Point{
+							X: 10,
+							Y: 10,
+						},
+						Max: Point{
+							X: 50,
+							Y: 50,
+						},
+					},
+					Action: nil,
 				},
 			},
 			want: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := Bound{
-				Min:    tt.fields.Min,
-				Max:    tt.fields.Max,
-				Center: tt.fields.Center,
-				Width:  tt.fields.Width,
-				Height: tt.fields.Height,
-			}
-			if got := b.IsIntersectBound(tt.args.bounds); got != tt.want {
-				t.Errorf("Bound.IsIntersectBound() = %v, want %v", got, tt.want)
+			if got := tt.fields.entity.IsEqual(tt.args.entity); got != tt.want {
+				t.Errorf("Entity.IsEntity() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestBound_IsIntersectPoint(t *testing.T) {
-	type fields struct {
-		Min    Point
-		Max    Point
-		Center Point
-		Width  float64
-		Height float64
-	}
-	type args struct {
-		point Point
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-	}{
-		{
-			name: "is intersected test",
-			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
-			},
-			args: args{
-				point: Point{5, 5},
-			},
-			want: true,
-		},
-		{
-			name: "is not interacted test",
-			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
-			},
-			args: args{
-				point: Point{55, 55},
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := Bound{
-				Min:    tt.fields.Min,
-				Max:    tt.fields.Max,
-				Center: tt.fields.Center,
-				Width:  tt.fields.Width,
-				Height: tt.fields.Height,
-			}
-			if got := b.IsIntersectPoint(tt.args.point); got != tt.want {
-				t.Errorf("Bound.IsIntersectPoint() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestBound_String(t *testing.T) {
-	type fields struct {
-		Min    Point
-		Max    Point
-		Center Point
-		Width  float64
-		Height float64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name: "bound to string",
-			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-				Width:  50,
-				Height: 50,
-			},
-			want: "Min: X: 0, Y: 0, Max: X: 50, Y: 50, Center: X: 25, Y: 25\n Width: 50, Height 50\n",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := Bound{
-				Min:    tt.fields.Min,
-				Max:    tt.fields.Max,
-				Center: tt.fields.Center,
-				Width:  tt.fields.Width,
-				Height: tt.fields.Height,
-			}
-			if got := b.String(); got != tt.want {
-				t.Errorf("Bound.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestPoint_String(t *testing.T) {
-	type fields struct {
-		X float64
-		Y float64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name:   "point to string",
-			fields: fields{5, 5},
-			want:   "X: 5, Y: 5",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := Point{
-				X: tt.fields.X,
-				Y: tt.fields.Y,
-			}
-			if got := p.String(); got != tt.want {
-				t.Errorf("Point.String() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// func TestEntity_String(t *testing.T) {
+// 	type fields struct {
+// 		Bound  Bound
+// 		action func()
+// 	}
+// 	tests := []struct {
+// 		name   string
+// 		fields fields
+// 		want   string
+// 	}{
+// 		{
+// 			name: "entity to string",
+// 			fields: fields{
+// 				Bound: Bound{
+// 					Min:    Point{0, 0},
+// 					Max:    Point{50, 50},
+// 					Center: Point{25, 25},
+// 				},
+// 				action: nil,
+// 			},
+// 			want: "Bounds: Min: X: 0, Y: 0, Max: X: 50, Y: 50, Center: X: 25, Y: 25\n Action: <nil>",
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			e := &Entity{
+// 				Bound:  tt.fields.Bound,
+// 				Action: tt.fields.action,
+// 			}
+// 			if got := e.String(); got != tt.want {
+// 				t.Errorf("Entity.String() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }

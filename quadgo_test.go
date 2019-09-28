@@ -1,109 +1,87 @@
+// Copyright 2019 Tskken. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package quadgo
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 )
 
-func TestSetBounds(t *testing.T) {
-	type args struct {
-		width  float64
-		height float64
-	}
-	tests := []struct {
-		name string
-		args args
-		want *Options
-	}{
-		{
-			name: "basic test",
-			args: args{
-				width:  1920,
-				height: 1080,
-			},
-			want: &Options{
-				Width:       1920,
-				Height:      1080,
-				MaxEntities: defaultOption.MaxEntities,
-				MaxDepth:    defaultOption.MaxDepth,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := SetBounds(tt.args.width, tt.args.height)
-			op := defaultOption
-			got(op)
-			if !reflect.DeepEqual(op, tt.want) {
-				t.Errorf("Options = %v, want %v", op, tt.want)
-			}
-		})
-	}
-}
-
 func TestSetMaxEntities(t *testing.T) {
+	type fields struct {
+		options *options
+	}
 	type args struct {
-		maxEntities int
+		maxEntities uint64
 	}
 	tests := []struct {
-		name string
-		args args
-		want *Options
+		name   string
+		fields fields
+		args   args
+		want   uint64
 	}{
 		{
-			name: "basic test",
+			name: "basic set max entities",
+			fields: fields{
+				options: &options{
+					MaxEntities: 1,
+					MaxDepth:    1,
+				},
+			},
 			args: args{
 				maxEntities: 5,
 			},
-			want: &Options{
-				Width:       defaultOption.Width,
-				Height:      defaultOption.Height,
-				MaxEntities: 5,
-				MaxDepth:    defaultOption.MaxDepth,
-			},
+			want: 5,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SetMaxEntities(5)
-			op := defaultOption
-			got(op)
-			if !reflect.DeepEqual(op, tt.want) {
-				t.Errorf("Options = %v, want %v", op, tt.want)
+			opFunc := SetMaxEntities(tt.args.maxEntities)
+			opFunc(tt.fields.options)
+			if tt.fields.options.MaxEntities != tt.want {
+				t.Errorf("quadgo.SetMaxEntities() = %v, want %v", tt.fields.options.MaxEntities, tt.want)
 			}
 		})
 	}
 }
 
 func TestSetMaxDepth(t *testing.T) {
+	type fields struct {
+		options *options
+	}
 	type args struct {
-		maxDepth int
+		maxDepth uint16
 	}
 	tests := []struct {
-		name string
-		args args
-		want *Options
+		name   string
+		fields fields
+		args   args
+		want   uint16
 	}{
 		{
-			name: "basic test",
+			name: "basic set max entities",
+			fields: fields{
+				options: &options{
+					MaxEntities: 1,
+					MaxDepth:    1,
+				},
+			},
 			args: args{
 				maxDepth: 5,
 			},
-			want: &Options{
-				Width:       defaultOption.Width,
-				Height:      defaultOption.Height,
-				MaxEntities: defaultOption.MaxEntities,
-				MaxDepth:    5,
-			},
+			want: 5,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SetMaxDepth(5)
-			op := defaultOption
-			got(op)
-			if !reflect.DeepEqual(op, tt.want) {
-				t.Errorf("Options = %v, want %v", op, tt.want)
+			opFunc := SetMaxDepth(tt.args.maxDepth)
+			opFunc(tt.fields.options)
+			if tt.fields.options.MaxDepth != tt.want {
+				t.Errorf("quadgo.SetMaxEntities() = %v, want %v", tt.fields.options.MaxEntities, tt.want)
 			}
 		})
 	}
@@ -111,7 +89,8 @@ func TestSetMaxDepth(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	type args struct {
-		ops []Option
+		width, height float64
+		ops           []Option
 	}
 	tests := []struct {
 		name string
@@ -119,11 +98,15 @@ func TestNew(t *testing.T) {
 		want *QuadGo
 	}{
 		{
-			name: "default new",
+			name: "basic default new",
+			args: args{
+				width:  800,
+				height: 600,
+			},
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, defaultOption.Width, defaultOption.Height),
+					bound:    NewBound(0, 0, 800, 600),
 					entities: make(Entities, 0, defaultOption.MaxEntities),
 					children: make(nodes, 0, 4),
 					depth:    0,
@@ -132,17 +115,19 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name: "SetBounds on New",
+			name: "new with SetMaxEntities()",
 			args: args{
+				width:  800,
+				height: 600,
 				ops: []Option{
-					SetBounds(1920, 1080),
+					SetMaxEntities(20),
 				},
 			},
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, 1920, 1080),
-					entities: make(Entities, 0, defaultOption.MaxEntities),
+					bound:    NewBound(0, 0, 800, 600),
+					entities: make(Entities, 0, 20),
 					children: make(nodes, 0, 4),
 					depth:    0,
 				},
@@ -150,30 +135,56 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name: "Set all options test",
+			name: "new with SetMaxDepth()",
 			args: args{
+				width:  800,
+				height: 600,
 				ops: []Option{
-					SetBounds(1920, 1080),
-					SetMaxEntities(5),
-					SetMaxDepth(1),
+					SetMaxDepth(10),
 				},
 			},
 			want: &QuadGo{
 				node: &node{
 					parent:   nil,
-					bounds:   NewBound(0, 0, 1920, 1080),
-					entities: make(Entities, 0, 5),
+					bound:    NewBound(0, 0, 800, 600),
+					entities: make(Entities, 0, defaultOption.MaxEntities),
 					children: make(nodes, 0, 4),
 					depth:    0,
 				},
-				maxDepth: 1,
+				maxDepth: 10,
+			},
+		},
+		{
+			name: "new with SetMaxDepth() and SetMaxEntities()",
+			args: args{
+				width:  800,
+				height: 600,
+				ops: []Option{
+					SetMaxDepth(10),
+					SetMaxEntities(20),
+				},
+			},
+			want: &QuadGo{
+				node: &node{
+					parent:   nil,
+					bound:    NewBound(0, 0, 800, 600),
+					entities: make(Entities, 0, 20),
+					children: make(nodes, 0, 4),
+					depth:    0,
+				},
+				maxDepth: 10,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.ops...); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("New() = %v, want %v", got, tt.want)
+			got := New(tt.args.width, tt.args.height, tt.args.ops...)
+			if got.maxDepth != tt.want.maxDepth {
+				t.Errorf("quadgo.New() for maxDepth = %v, want %v", got.maxDepth, tt.want.maxDepth)
+			} else if cap(got.entities) != cap(tt.want.entities) {
+				t.Errorf("quadgo.New() for maxEntities = %v, want %v", cap(got.entities), cap(tt.want.entities))
+			} else if !got.bound.IsEqual(tt.want.bound) {
+				t.Errorf("quadgo.New() for bounds = %v, want %v", got.bound, tt.want.bound)
 			}
 		})
 	}
@@ -181,75 +192,207 @@ func TestNew(t *testing.T) {
 
 func TestQuadGo_Insert(t *testing.T) {
 	type fields struct {
-		options []Option
+		quadgo *QuadGo
 	}
 	type args struct {
-		minX float64
-		minY float64
-		maxX float64
-		maxY float64
-		objs []interface{}
+		minX, minY, maxX, maxY float64
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    []args
-		wantErr bool
+		name   string
+		fields fields
+		args   []args
+		want   Entities
 	}{
 		{
-			name: "basic insert",
-			args: []args{
-				{0, 0, 50, 50, nil},
-			},
-			wantErr: false,
-		},
-		{
-			name: "insert to splitAndMove",
+			name: "basic insert on empty list",
 			fields: fields{
-				[]Option{
-					SetMaxEntities(1),
+				quadgo: New(800, 600),
+			},
+			args: []args{
+				{
+					minX: 0,
+					minY: 0,
+					maxX: 50,
+					maxY: 50,
 				},
 			},
-			args: []args{
-				{0, 0, 50, 50, nil},
-				{500, 500, 700, 700, nil},
-				{700, 800, 900, 1000, nil},
+			want: Entities{
+				NewEntity(0, 0, 50, 50),
 			},
-			wantErr: false,
 		},
 		{
-			name: "insert all 4 quadrants",
+			name: "insert with a split",
 			fields: fields{
-				options: []Option{
-					SetMaxEntities(1),
-					SetBounds(100, 100),
-				},
+				quadgo: New(800, 600, SetMaxEntities(2)),
 			},
 			args: []args{
-				{0, 0, 50, 50, nil},
-				{51, 51, 100, 100, nil},
-				{0, 51, 50, 100, nil},
-				{51, 0, 100, 50, nil},
+				{
+					minX: 0,
+					minY: 0,
+					maxX: 50,
+					maxY: 50,
+				},
+				{
+					minX: 20,
+					minY: 20,
+					maxX: 40,
+					maxY: 40,
+				},
+				{
+					minX: 25,
+					minY: 25,
+					maxX: 70,
+					maxY: 70,
+				},
 			},
-			wantErr: false,
+			want: Entities{
+				NewEntity(0, 0, 50, 50),
+				NewEntity(20, 20, 40, 40),
+				NewEntity(25, 25, 70, 70),
+			},
+		},
+		{
+			name: "insert with no split for max depth",
+			fields: fields{
+				quadgo: New(800, 600, SetMaxEntities(2), SetMaxDepth(0)),
+			},
+			args: []args{
+				{
+					minX: 0,
+					minY: 0,
+					maxX: 50,
+					maxY: 50,
+				},
+				{
+					minX: 20,
+					minY: 20,
+					maxX: 40,
+					maxY: 40,
+				},
+				{
+					minX: 25,
+					minY: 25,
+					maxX: 70,
+					maxY: 70,
+				},
+			},
+			want: Entities{
+				NewEntity(0, 0, 50, 50),
+				NewEntity(20, 20, 40, 40),
+				NewEntity(25, 25, 70, 70),
+			},
+		},
+		{
+			name: "inert 4 quadrents",
+			fields: fields{
+				quadgo: New(800, 600, SetMaxEntities(1)),
+			},
+			args: []args{
+				{
+					minX: 0,
+					minY: 0,
+					maxX: 50,
+					maxY: 50,
+				},
+				{
+					minX: 0,
+					minY: 350,
+					maxX: 50,
+					maxY: 500,
+				},
+				{
+					minX: 450,
+					minY: 0,
+					maxX: 600,
+					maxY: 50,
+				},
+				{
+					minX: 450,
+					minY: 350,
+					maxX: 600,
+					maxY: 500,
+				},
+			},
+			want: Entities{
+				NewEntity(0, 0, 50, 50),
+				NewEntity(0, 350, 50, 500),
+				NewEntity(450, 0, 600, 50),
+				NewEntity(450, 350, 600, 500),
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, a := range tt.args {
-				if err := q.Insert(a.minX, a.minY, a.maxX, a.maxY, a.objs...); (err != nil) != tt.wantErr {
-					t.Errorf("QuadGo.Insert() error = %v, wantErr %v", err, tt.wantErr)
-				}
+			for _, arg := range tt.args {
+				tt.fields.quadgo.Insert(arg.minX, arg.minY, arg.maxX, arg.maxY)
 			}
 
+			for _, wnt := range tt.want {
+				found := false
+
+				for _, e := range <-tt.fields.quadgo.Retrieve(wnt.Bound) {
+					if e.Bound.IsEqual(wnt.Bound) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					t.Errorf("QuadGo.Insert() could not find %v in tree", wnt)
+				}
+			}
 		})
 	}
 }
 
-func TestQuadGo_InsertEntity(t *testing.T) {
+func TestQuadGo_InsertWithAction(t *testing.T) {
 	type fields struct {
-		options []Option
+		quadgo *QuadGo
+	}
+	type args struct {
+		minX, minY, maxX, maxY float64
+		action                 Action
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *Entity
+	}{
+		{
+			name: "insert with action on empty list",
+			fields: fields{
+				quadgo: New(800, 600),
+			},
+			args: args{
+				minX:   0,
+				minY:   0,
+				maxX:   50,
+				maxY:   50,
+				action: func() { fmt.Println("value in a function") },
+			},
+			want: NewEntityWithAction(0, 0, 50, 50, func() { fmt.Println("value in a function") }),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.fields.quadgo.InsertWithAction(tt.args.minX, tt.args.minY, tt.args.maxX, tt.args.maxY, tt.args.action)
+
+			for _, ent := range <-tt.fields.quadgo.Retrieve(tt.want.Bound) {
+				if !ent.Bound.IsEqual(tt.want.Bound) {
+					t.Errorf("QuadGo.InsertWithAction() entity bound not inserted %v", ent)
+				}
+				if ent.Action == nil {
+					t.Errorf("QuadGo.InsertWithAction() no action set = %v", ent)
+				}
+			}
+		})
+	}
+}
+
+func TestQuadGo_InsertEntities(t *testing.T) {
+	type fields struct {
+		quadgo *QuadGo
 	}
 	type args struct {
 		entities Entities
@@ -258,27 +401,55 @@ func TestQuadGo_InsertEntity(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		wantErr bool
+		want    Entities
+		wantErr error
 	}{
 		{
-			name: "basic insert",
+			name: "insert 1 entity",
+			fields: fields{
+				quadgo: New(800, 600),
+			},
 			args: args{
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+					&Entity{
+						ID:     1,
+						Bound:  NewBound(0, 0, 50, 50),
+						Action: nil,
+					},
 				},
 			},
-			wantErr: false,
+			want: Entities{
+				&Entity{
+					ID:     1,
+					Bound:  NewBound(0, 0, 50, 50),
+					Action: nil,
+				},
+			},
+			wantErr: nil,
 		},
 		{
-			name:    "no entities given error",
-			wantErr: true,
+			name: "insert no entities error",
+			fields: fields{
+				quadgo: New(800, 600),
+			},
+			args: args{
+				entities: nil,
+			},
+			want:    nil,
+			wantErr: errors.New("no entities given to QuadGo.InsertEntities()"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			if err := q.InsertEntities(tt.args.entities...); (err != nil) != tt.wantErr {
-				t.Errorf("QuadGo.InsertEntities() error = %v, wantErr %v", err, tt.wantErr)
+			err := tt.fields.quadgo.InsertEntities(tt.args.entities...)
+			if !reflect.DeepEqual(err, tt.wantErr) {
+				t.Errorf("QuadGo.InsertEntities() unwanted error type = %v, want %v", err, tt.wantErr)
+			}
+
+			for _, ent := range tt.want {
+				if !<-tt.fields.quadgo.IsEntity(ent) {
+					t.Errorf("QuadGo.InsertEntities() entity not inserted %v", ent)
+				}
 			}
 		})
 	}
@@ -286,170 +457,118 @@ func TestQuadGo_InsertEntity(t *testing.T) {
 
 func TestQuadGo_Remove(t *testing.T) {
 	type fields struct {
-		options  []Option
+		quadgo   *QuadGo
 		entities Entities
 	}
 	type args struct {
-		entities Entities
+		entity *Entity
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		wantErr bool
+		wantErr error
 	}{
 		{
-			name: "basic remove entity",
+			name: "remove 1 entity",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+					&Entity{
+						ID:     1,
+						Bound:  NewBound(0, 0, 50, 50),
+						Action: nil,
+					},
+					&Entity{
+						ID:     2,
+						Bound:  NewBound(20, 20, 50, 50),
+						Action: nil,
+					},
+					&Entity{
+						ID:     3,
+						Bound:  NewBound(5, 5, 90, 80),
+						Action: nil,
+					},
 				},
 			},
 			args: args{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+				&Entity{
+					ID:     2,
+					Bound:  NewBound(20, 20, 50, 50),
+					Action: nil,
 				},
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
-			name: "no entity found in tree",
+			name: "remove and collapse",
 			fields: fields{
+				quadgo: New(800, 600, SetMaxEntities(2)),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+					&Entity{
+						ID:     1,
+						Bound:  NewBound(0, 0, 50, 50),
+						Action: nil,
+					},
+					&Entity{
+						ID:     2,
+						Bound:  NewBound(25, 25, 50, 60),
+						Action: nil,
+					},
+					&Entity{
+						ID:     3,
+						Bound:  NewBound(5, 5, 90, 80),
+						Action: nil,
+					},
 				},
 			},
 			args: args{
-				entities: Entities{
-					NewEntity(0, 0, 25, 25),
+				&Entity{
+					ID:     1,
+					Bound:  NewBound(0, 0, 50, 50),
+					Action: nil,
 				},
 			},
-			wantErr: true,
+			wantErr: nil,
 		},
 		{
-			name: "remove from deeper node",
+			name: "remove non entity error",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(55, 55, 105, 105),
-					NewEntity(400, 400, 600, 600),
-				},
-				options: []Option{
-					SetMaxEntities(1),
+					NewEntity(20, 20, 50, 50),
+					NewEntity(5, 5, 90, 80),
 				},
 			},
 			args: args{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "collapseAndMove test",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(100, 100, 150, 150),
-					NewEntity(200, 200, 250, 250),
-				},
-				options: []Option{
-					SetMaxEntities(2),
-				},
-			},
-			args: args{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(100, 100, 150, 150),
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.Remove() error = %v", err)
-				}
-			}
-			for _, e := range tt.args.entities {
-				if err := q.Remove(e); (err != nil) != tt.wantErr {
-					t.Errorf("QuadGo.Remove() error = %v, wantErr %v", err, tt.wantErr)
-				}
-			}
-		})
-	}
-}
-
-func TestQuadGo_RetrieveFromPoint(t *testing.T) {
-	type fields struct {
-		entities Entities
-		options  []Option
-	}
-	type args struct {
-		point Point
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Entities
-	}{
-		{
-			name: "basic retrieve from point",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			args: args{
-				point: Point{5, 5},
-			},
-			want: Entities{
 				NewEntity(0, 0, 50, 50),
 			},
-		},
-		{
-			name: "find none from retrieve from point",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(5, 5, 55, 55),
-				},
-				options: []Option{
-					SetBounds(100, 100),
-					SetMaxEntities(1),
-				},
-			},
-			args: args{
-				point: Point{100, 100},
-			},
-			want: Entities{},
+			wantErr: errors.New("could not find entity in tree to remove"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.RetrieveFromPoint() for %v", e)
-				}
+			err := tt.fields.quadgo.InsertEntities(tt.fields.entities...)
+			if err != nil {
+				t.Errorf("QuadGo.Remove() insert entities with error %v", err)
 			}
-			if got := q.RetrieveFromPoint(tt.args.point); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("QuadGo.RetrieveFromPoint() = %v, want %v", got, tt.want)
+
+			err = tt.fields.quadgo.Remove(tt.args.entity)
+			if !reflect.DeepEqual(err, tt.wantErr) {
+				t.Errorf("QuadGo.Remove() got an unwanted error = %v, want %v", err, tt.wantErr)
+			}
+
+			if <-tt.fields.quadgo.IsEntity(tt.args.entity) {
+				t.Errorf("QuadGo.Remove() found entity even after delete")
 			}
 		})
 	}
 }
 
-func TestQuadGo_RetrieveFromBound(t *testing.T) {
+func TestQuadGo_Retrieve(t *testing.T) {
 	type fields struct {
+		quadgo   *QuadGo
 		entities Entities
-		options  []Option
 	}
 	type args struct {
 		bound Bound
@@ -461,48 +580,69 @@ func TestQuadGo_RetrieveFromBound(t *testing.T) {
 		want   Entities
 	}{
 		{
-			name: "basic retrieve from bound",
+			name: "find 1 value",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+					&Entity{
+						ID:    1,
+						Bound: NewBound(0, 0, 50, 50),
+					},
 				},
 			},
 			args: args{
 				bound: NewBound(5, 5, 10, 10),
 			},
 			want: Entities{
-				NewEntity(0, 0, 50, 50),
+				&Entity{
+					ID:    1,
+					Bound: NewBound(0, 0, 50, 50),
+				},
 			},
 		},
 		{
-			name: "find none from retrieve from bound",
+			name: "find 1 value from child",
 			fields: fields{
+				quadgo: New(800, 600, SetMaxEntities(2)),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(5, 5, 55, 55),
-				},
-				options: []Option{
-					SetBounds(100, 100),
-					SetMaxEntities(1),
+					&Entity{
+						ID:    1,
+						Bound: NewBound(0, 0, 50, 50),
+					},
+					&Entity{
+						ID:    2,
+						Bound: NewBound(500, 400, 700, 600),
+					},
+					&Entity{
+						ID:    3,
+						Bound: NewBound(450, 350, 600, 550),
+					},
 				},
 			},
 			args: args{
-				bound: NewBound(80, 80, 100, 100),
+				bound: NewBound(5, 5, 10, 10),
 			},
-			want: Entities{},
+			want: Entities{
+				&Entity{
+					ID:    1,
+					Bound: NewBound(0, 0, 50, 50),
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.RetrieveFromBound() for %v", e)
-				}
+			err := tt.fields.quadgo.InsertEntities(tt.fields.entities...)
+			if err != nil {
+				t.Errorf("QuadGo.Retrieve() got error on insert %v", err)
 			}
-			if got := q.RetrieveFromBound(tt.args.bound); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("QuadGo.RetrieveFromBound() = %v, want %v", got, tt.want)
+
+			entities := <-tt.fields.quadgo.Retrieve(tt.args.bound)
+
+			for _, ent := range tt.want {
+				if !entities.Contains(ent) {
+					t.Errorf("QuadGo.Retrieve() wanted value not found, entities: %v, want: %v", entities, ent)
+				}
 			}
 		})
 	}
@@ -510,8 +650,8 @@ func TestQuadGo_RetrieveFromBound(t *testing.T) {
 
 func TestQuadGo_IsEntity(t *testing.T) {
 	type fields struct {
+		quadgo   *QuadGo
 		entities Entities
-		options  []Option
 	}
 	type args struct {
 		entity *Entity
@@ -523,107 +663,118 @@ func TestQuadGo_IsEntity(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "basic IsEntity",
+			name: "is entity true",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-					NewEntity(100, 100, 150, 150),
+					&Entity{
+						ID:    1,
+						Bound: NewBound(0, 0, 50, 50),
+					},
 				},
 			},
 			args: args{
-				NewEntity(0, 0, 50, 50),
+				entity: &Entity{
+					ID:    1,
+					Bound: NewBound(0, 0, 50, 50),
+				},
 			},
 			want: true,
 		},
 		{
-			name: "not found for IsEntity",
+			name: "is entity false",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
 					NewEntity(0, 0, 50, 50),
-					NewEntity(100, 100, 150, 150),
 				},
 			},
 			args: args{
-				NewEntity(5, 5, 50, 50),
+				entity: NewEntity(10, 10, 50, 50),
+			},
+			want: false,
+		},
+		{
+			name: "is entity true from branch",
+			fields: fields{
+				quadgo: New(800, 800, SetMaxEntities(2)),
+				entities: Entities{
+					&Entity{
+						ID:     1,
+						Bound:  NewBound(0, 0, 50, 50),
+						Action: nil,
+					},
+					&Entity{
+						ID:     2,
+						Bound:  NewBound(25, 25, 50, 60),
+						Action: nil,
+					},
+					&Entity{
+						ID:     3,
+						Bound:  NewBound(5, 5, 90, 80),
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					ID:     1,
+					Bound:  NewBound(0, 0, 50, 50),
+					Action: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "is entity false from branch",
+			fields: fields{
+				quadgo: New(800, 800, SetMaxEntities(2)),
+				entities: Entities{
+					&Entity{
+						ID:     1,
+						Bound:  NewBound(0, 0, 50, 50),
+						Action: nil,
+					},
+					&Entity{
+						ID:     2,
+						Bound:  NewBound(25, 25, 50, 60),
+						Action: nil,
+					},
+					&Entity{
+						ID:     3,
+						Bound:  NewBound(5, 5, 90, 80),
+						Action: nil,
+					},
+				},
+			},
+			args: args{
+				entity: &Entity{
+					ID:     5,
+					Bound:  NewBound(5, 5, 50, 50),
+					Action: nil,
+				},
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsEntity() for %v", e)
-				}
+			err := tt.fields.quadgo.InsertEntities(tt.fields.entities...)
+			if err != nil {
+				t.Errorf("QuadGo.IsEntity() got error on insert %v", err)
 			}
-			if got := q.IsEntity(tt.args.entity); got != tt.want {
-				t.Errorf("QuadGo.IsEntity() = %v, want %v", got, tt.want)
+
+			if got := <-tt.fields.quadgo.IsEntity(tt.args.entity); got != tt.want {
+				t.Errorf("QuadGo.IsEntity() = %v, wanted %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestQuadGo_IsIntersectPoint(t *testing.T) {
+func TestQuadGo_IsIntersect(t *testing.T) {
 	type fields struct {
+		quadgo   *QuadGo
 		entities Entities
-		options  []Option
-	}
-	type args struct {
-		point Point
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-	}{
-		{
-			name: "basic IsIntersectPoint",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			args: args{
-				point: Point{5, 5},
-			},
-			want: true,
-		},
-		{
-			name: "is not IsIntersectPoint",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			args: args{
-				point: Point{55, 55},
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
-				}
-			}
-			if got := q.IsIntersectPoint(tt.args.point); got != tt.want {
-				t.Errorf("QuadGo.IsIntersectPoint() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestQuadGo_IsIntersectBound(t *testing.T) {
-	type fields struct {
-		entities Entities
-		options  []Option
 	}
 	type args struct {
 		bound Bound
@@ -635,8 +786,9 @@ func TestQuadGo_IsIntersectBound(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "basic IsIntersectPoint",
+			name: "is intersect true",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
 					NewEntity(0, 0, 50, 50),
 				},
@@ -647,94 +799,37 @@ func TestQuadGo_IsIntersectBound(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "is not IsIntersectPoint",
+			name: "is intersect false",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
 					NewEntity(0, 0, 50, 50),
 				},
 			},
 			args: args{
-				bound: NewBound(55, 55, 60, 60),
+				bound: NewBound(60, 60, 70, 70),
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
-				}
+			err := tt.fields.quadgo.InsertEntities(tt.fields.entities...)
+			if err != nil {
+				t.Errorf("QuadGo.IsIntersect() got error on insert %v", err)
 			}
-			if got := q.IsIntersectBound(tt.args.bound); got != tt.want {
-				t.Errorf("QuadGo.IsIntersectBound() = %v, want %v", got, tt.want)
+
+			if got := <-tt.fields.quadgo.IsIntersect(tt.args.bound); got != tt.want {
+				t.Errorf("QuadGo.IsIntersect() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestQuadGo_IntersectsPoint(t *testing.T) {
+func TestQuadGo_Intersects(t *testing.T) {
 	type fields struct {
+		quadgo   *QuadGo
 		entities Entities
-		options  []Option
-	}
-	type args struct {
-		point Point
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   Entities
-	}{
-		{
-			name: "basic IsIntersectPoint",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			args: args{
-				point: Point{5, 5},
-			},
-			want: Entities{
-				NewEntity(0, 0, 50, 50),
-			},
-		},
-		{
-			name: "is not IsIntersectPoint",
-			fields: fields{
-				entities: Entities{
-					NewEntity(0, 0, 50, 50),
-				},
-			},
-			args: args{
-				point: Point{55, 55},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
-				}
-			}
-			if gotIntersects := q.IntersectsPoint(tt.args.point); !reflect.DeepEqual(gotIntersects, tt.want) {
-				t.Errorf("QuadGo.IntersectsPoint() = %v, want %v", gotIntersects, tt.want)
-			}
-		})
-	}
-}
-
-func TestQuadGo_IntersectsBound(t *testing.T) {
-	type fields struct {
-		entities Entities
-		options  []Option
 	}
 	type args struct {
 		bound Bound
@@ -746,42 +841,57 @@ func TestQuadGo_IntersectsBound(t *testing.T) {
 		want   Entities
 	}{
 		{
-			name: "basic IsIntersectPoint",
+			name: "is intersect true",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
-					NewEntity(0, 0, 50, 50),
+					&Entity{
+						ID:    1,
+						Bound: NewBound(0, 0, 50, 50),
+					},
 				},
 			},
 			args: args{
 				bound: NewBound(5, 5, 10, 10),
 			},
 			want: Entities{
-				NewEntity(0, 0, 50, 50),
+				&Entity{
+					ID:    1,
+					Bound: NewBound(0, 0, 50, 50),
+				},
 			},
 		},
 		{
-			name: "is not IsIntersectPoint",
+			name: "is intersect false",
 			fields: fields{
+				quadgo: New(800, 600),
 				entities: Entities{
 					NewEntity(0, 0, 50, 50),
 				},
 			},
 			args: args{
-				bound: NewBound(55, 55, 60, 60),
+				bound: NewBound(60, 60, 70, 70),
 			},
+			want: Entities{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q := New(tt.fields.options...)
-			for _, e := range tt.fields.entities {
-				err := q.InsertEntities(e)
-				if err != nil {
-					t.Errorf("error in QuadGo.InsertEntities() found in QuadGo.IsIntersectPoint() for %v", e)
-				}
+			err := tt.fields.quadgo.InsertEntities(tt.fields.entities...)
+			if err != nil {
+				t.Errorf("QuadGo.IsIntersect() got error on insert %v", err)
 			}
-			if gotIntersects := q.IntersectsBound(tt.args.bound); !reflect.DeepEqual(gotIntersects, tt.want) {
-				t.Errorf("QuadGo.IntersectsBound() = %v, want %v", gotIntersects, tt.want)
+
+			got := <-tt.fields.quadgo.Intersects(tt.args.bound)
+
+			if len(tt.want) == 0 && len(got) != 0 {
+				t.Errorf("QuadGo.Intersects() wanted no intersects but got %v", got)
+			} else {
+				for _, ent := range tt.want {
+					if !got.Contains(ent) {
+						t.Errorf("QuadGo.Intersects() did not return wanted entity %v", ent)
+					}
+				}
 			}
 		})
 	}
