@@ -3,13 +3,15 @@ package quadgo
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
 )
 
-// Entities is a list of entities.
+// Entities is a list of Entity's.
 type Entities []*Entity
 
 // FindAndRemove finds and removes the given entity from the list of entities.
-// remove returns the new list of entities and an error if the given entity can not be found in the list of entities.
+// returns the new list of entities and an error if the given entity can not be found in the list of entities.
 func (e Entities) FindAndRemove(entity *Entity) (Entities, error) {
 	// check the entities in leaf for given entity
 	for i := range e {
@@ -42,89 +44,59 @@ func (e Entities) Contains(entity *Entity) bool {
 			return true
 		}
 	}
-
 	return false
-}
-
-// isIntersectPoint finds if a given point intersects any entities  in
-// the list of entities. It returns a bool on an output chan for running on a
-// secondary thread.
-func (e Entities) isIntersectPoint(point Point, out chan<- bool) {
-	// check if any entities returned intersect the given point
-	for i := range e {
-		// check for intersect
-		if e[i].IsIntersectPoint(point) {
-			out <- true
-		}
-	}
-	out <- false
 }
 
 // isIntersectBound finds if a given bound intersects any entities  in
 // the list of entities. It returns a bool on an output chan for running on a
 // secondary thread.
-func (e Entities) isIntersectBound(bound Bound, out chan<- bool) {
+func (e Entities) isIntersect(bound Bound) bool {
 	// check if any entities returned intersect the given point
 	for i := range e {
 		// check for intersect
-		if e[i].IsIntersectBound(bound) {
-			out <- true
+		if e[i].IsIntersect(bound) {
+			return true
 		}
 	}
-	out <- false
-}
-
-// isIntersectsPoint finds if a given point intersects any entities  in
-// the list of entities. It returns a list of intersected entities
-// on an output chan for running on a secondary thread.
-func (e Entities) intersectsPoint(point Point, out chan<- Entities) {
-	entities := make(Entities, 0, cap(e))
-
-	// check if any entities returned intersect the given point and if they do add them to the return list
-	for i := range e {
-		// add to list if they intersect
-		if e[i].IsIntersectPoint(point) {
-			entities = append(entities, e[i])
-		}
-	}
-
-	out <- entities
+	return false
 }
 
 // isIntersectsBound finds if a given Bound intersects any entities  in
 // the list of entities. It returns a list of intersected entities
 // on an output chan for running on a secondary thread.
-func (e Entities) intersectsBound(bound Bound, out chan<- Entities) {
-	entities := make(Entities, 0, cap(e))
-
+func (e Entities) intersects(bound Bound) (entities Entities) {
 	// check if any entities returned intersect the given point and if they do add them to the return list
 	for i := range e {
 		// add to list if they intersect
-		if e[i].IsIntersectBound(bound) {
+		if e[i].IsIntersect(bound) {
 			entities = append(entities, e[i])
 		}
 	}
-
-	out <- entities
+	return
 }
 
 // Action is a function type that can be given to a entity to be executed later.
 type Action func()
 
-// Entity is the basic Entity stricture type for QuadGo.
+// Entity is the Entity stricture type for QuadGo.
 //
-// Entity holds the Bound information for an entity in the tree and also a list of interface{} which can hold
-// any data that you would want to store in the entity.
+// Entity holds the Bound information for an entity in the tree and a Action function as a closer
+// style function type which can store a function to use later. Entity also holds an ID which is
+// by default a random uint64 value that is used to be able to acuritly compare
+// entities with IsEntity()
 type Entity struct {
+	ID uint64
 	Bound
 	Action
 }
 
-// NewEntity creates a new entity from the given min and max points and any given objects.
+// NewEntity creates a new entity from the given min and max points.
 //
-// The given objects can be any data that you want to hold with in the entity for the given bounds.
+// The ID for any given entity created will be default set to a random uint64 value seeded at creation
+// time with time.Now().UnixNano(). If you want to set an ID you self just change the ID after creation.
 func NewEntity(minX, minY, maxX, maxY float64) *Entity {
 	return &Entity{
+		ID:     rand.New(rand.NewSource(time.Now().UnixNano())).Uint64(),
 		Bound:  NewBound(minX, minY, maxX, maxY),
 		Action: nil,
 	}
@@ -139,6 +111,7 @@ func NewEntity(minX, minY, maxX, maxY float64) *Entity {
 //	})
 func NewEntityWithAction(minX, minY, maxX, maxY float64, action Action) *Entity {
 	return &Entity{
+		ID:     rand.New(rand.NewSource(time.Now().UnixNano())).Uint64(),
 		Bound:  NewBound(minX, minY, maxX, maxY),
 		Action: action,
 	}
@@ -149,13 +122,11 @@ func (e *Entity) SetAction(action Action) {
 	e.Action = action
 }
 
-// IsEqual checks if the given entities bound is equal to this entities bound.
-//
-// IsEqual ignores the action function in comparison as you can not compare anonymous functions.
+// IsEqual checks if the ID and bound of the entity is the same.
 func (e *Entity) IsEqual(entity *Entity) bool {
-	return e.Bound.IsEqual(entity.Bound)
+	return (e.ID == entity.ID) && e.Bound.IsEqual(entity.Bound)
 }
 
 func (e *Entity) String() string {
-	return fmt.Sprintf("Bounds: %v Action: %v\n", e.Bound, e.Action)
+	return fmt.Sprintf("ID: %v, Bounds: %v Action: %v\n", e.ID, e.Bound, e.Action)
 }

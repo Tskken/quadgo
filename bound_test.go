@@ -115,7 +115,7 @@ func TestBound_IsEqual(t *testing.T) {
 	}
 }
 
-func TestBound_IsIntersectBound(t *testing.T) {
+func TestBound_IsIntersect(t *testing.T) {
 	type fields struct {
 		Min    Point
 		Max    Point
@@ -170,62 +170,8 @@ func TestBound_IsIntersectBound(t *testing.T) {
 				Max:    tt.fields.Max,
 				Center: tt.fields.Center,
 			}
-			if got := b.IsIntersectBound(tt.args.bounds); got != tt.want {
+			if got := b.IsIntersect(tt.args.bounds); got != tt.want {
 				t.Errorf("Bound.IsIntersectBound() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestBound_IsIntersectPoint(t *testing.T) {
-	type fields struct {
-		Min    Point
-		Max    Point
-		Center Point
-	}
-	type args struct {
-		point Point
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-	}{
-		{
-			name: "is intersected test",
-			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-			},
-			args: args{
-				point: Point{5, 5},
-			},
-			want: true,
-		},
-		{
-			name: "is not interacted test",
-			fields: fields{
-				Min:    Point{0, 0},
-				Max:    Point{50, 50},
-				Center: Point{25, 25},
-			},
-			args: args{
-				point: Point{55, 55},
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := Bound{
-				Min:    tt.fields.Min,
-				Max:    tt.fields.Max,
-				Center: tt.fields.Center,
-			}
-			if got := b.IsIntersectPoint(tt.args.point); got != tt.want {
-				t.Errorf("Bound.IsIntersectPoint() = %v, want %v", got, tt.want)
 			}
 		})
 	}
