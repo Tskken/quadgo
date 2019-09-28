@@ -12,7 +12,6 @@
 // Note that all read operations with in this library are run concurrently but not safe with
 // write operations. No mutex locks are provided with in this library so if you want to make safe
 // writes and reads concurrently, you would have to set up your own mutex lock functions.
-
 package quadgo
 
 import (
