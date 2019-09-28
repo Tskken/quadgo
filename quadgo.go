@@ -251,7 +251,7 @@ func (n *node) retrieve(bound Bound) (entities Entities) {
 	if len(n.children) > 0 {
 		// get all child nodes the given bounds intersects
 		nodes := n.getQuadrant(bound)
-		// panic if no nodes were returned. This is a fatel error but should never hapen in any normal situation.
+		// panic if no nodes were returned. This is a fatel error but should never happen in any normal situation.
 		if len(nodes) == 0 {
 			panic(errors.New("could not find a node to retrive from in node.retrieve().getQuadrent()"))
 		}
@@ -278,7 +278,7 @@ func (n *node) insert(entity *Entity, maxDepth uint16) {
 	if len(n.children) > 0 {
 		// get all child nodes the given bounds intersects
 		nodes := n.getQuadrant(entity.Bound)
-		// panic if no nodes were returned. This is a fatel error but should never hapen in any normal situation.
+		// panic if no nodes were returned. This is a fatel error but should never happen in any normal situation.
 		if len(nodes) == 0 {
 			panic(errors.New("could not find a node to insert in to from node.insert().getQuadrent()"))
 		}
@@ -310,7 +310,7 @@ func (n *node) remove(entity *Entity) error {
 	if len(n.children) > 0 {
 		// get all child nodes the given bounds intersects
 		nodes := n.getQuadrant(entity.Bound)
-		// panic if no nodes were returned. This is a fatel error but should never hapen in any normal situation.
+		// panic if no nodes were returned. This is a fatel error but should never happen in any normal situation.
 		if len(nodes) == 0 {
 			panic(errors.New("could not find a node to remove in to from node.remove().getQuadrent()"))
 		}
@@ -379,7 +379,7 @@ func (n *node) isEntity(entity *Entity) bool {
 	if len(n.children) > 0 {
 		// get all child nodes the given bounds intersects
 		nodes := n.getQuadrant(entity.Bound)
-		// panic if no nodes were returned. This is a fatel error but should never hapen in any normal situation.
+		// panic if no nodes were returned. This is a fatel error but should never happen in any normal situation.
 		if len(nodes) == 0 {
 			panic(errors.New("could not find a node for node.isEntity().getQuadrent()"))
 		}
