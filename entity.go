@@ -75,14 +75,14 @@ func (e Entities) intersects(bound Bound) (entities Entities) {
 	return
 }
 
-// Action is a function type that can be given to a entity to be executed later.
+// Action is a function type that can be given to an entity to be executed later.
 type Action func()
 
-// Entity is the Entity stricture type for QuadGo.
+// Entity is the Entity structure type for QuadGo.
 //
-// Entity holds the Bound information for an entity in the tree and a Action function as a closer
+// Entity holds the Bound information for an entity in the tree and an Action function as a closer
 // style function type which can store a function to use later. Entity also holds an ID which is
-// by default a random uint64 value that is used to be able to acuritly compare
+// by default a random uint64 value that is used to be able to accurately compare
 // entities with IsEntity()
 type Entity struct {
 	ID uint64

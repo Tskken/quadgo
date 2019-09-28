@@ -12,7 +12,7 @@ type Bound struct {
 
 // NewBound creates a new Bound struct from the given min and max points.
 //
-// Note: QuadGo format fallows the standerd 0,0 as the top left of the screen.
+// Note: QuadGo format follows the standard 0,0 as the top left of the screen.
 func NewBound(minX, minY, maxX, maxY float64) Bound {
 	return Bound{
 		Min: Point{X: minX, Y: minY},
@@ -27,7 +27,7 @@ func NewBound(minX, minY, maxX, maxY float64) Bound {
 // IsEqual checks if the given bound is equal to this bound.
 //
 // Only checks min and max points as center is based off those points
-// and checking it would be redundent.
+// and checking it would be redundant.
 func (b Bound) IsEqual(bound Bound) bool {
 	return b.Min.IsEqual(bound.Min) && b.Max.IsEqual(bound.Max)
 }

@@ -1,13 +1,14 @@
 // Package quadgo provides a basic quad-tree implementation for
-// game collision detection. It provides most standered read and write
+// game collision detection. It provides most standard read and write
 // operations for a quad-tree. The main uses cases would be using quadgo
 // with its provided quadgo.IsIntersect() functions to check for intersects
 // with in your game space. You would insert objects (quadgo.Entity) types with ether
 // quadgo.Insert(), quadgo.InsertWithAction(), or quadgo.InsertEntities().
 //
-// Note that all read operations with in this library are run concurently but not safe with
+// Note that all read operations with in this library are run concurrently but not safe with
 // write operations. No mutex locks are provided with in this library so if you want to make safe
-// writes and reads concurently, you would have to set up your own mutex lock functions.
+// writes and reads concurrently, you would have to set up your own mutex lock functions.
+
 package quadgo
 
 import (
@@ -54,7 +55,7 @@ func SetMaxDepth(maxDepth uint16) Option {
 	}
 }
 
-// QuadGo - Base Quad-tree data structure.
+// QuadGo - Base quad-tree data structure.
 type QuadGo struct {
 	*node
 
@@ -66,8 +67,8 @@ type QuadGo struct {
 // New requires a width and a height but can also be given any number of other supported Option functions.
 //
 // Example:
-//	basic - quadgo.New(800, 600)
-// 	with option - quadgo.New(800, 600, SetMaxDepth(5))
+//  basic - quadgo.New(800, 600)
+//  with option - quadgo.New(800, 600, SetMaxDepth(5))
 //
 // QuadGo sets the New defaults for max depth to 5 and max entities to 10.
 func New(width, height float64, ops ...Option) *QuadGo {
@@ -95,9 +96,9 @@ func New(width, height float64, ops ...Option) *QuadGo {
 // Insert takes the desired min and max xy points for the inserted entity.
 //
 // Insert will insert the entity for the given bounds in to all leaf nodes that
-// the given bounds intersects with. This can mean duplecet refrencies if the given bound
-// is large and can intersect many leaf nodes. These are &Entity refrinces which help save
-// on memory use but be aware if you insert large objects it can hinder praformince.
+// the given bounds intersects with. This can mean duplicate references if the given bound
+// is large and can intersect many leaf nodes. These are Entity references which help save
+// on memory use but be aware if you insert large objects it can hinder performance.
 func (q *QuadGo) Insert(minX, minY, maxX, maxY float64) {
 	q.insert(NewEntity(minX, minY, maxX, maxY), q.maxDepth)
 }
@@ -107,7 +108,7 @@ func (q *QuadGo) InsertWithAction(minX, minY, maxX, maxY float64, action Action)
 	q.insert(NewEntityWithAction(minX, minY, maxX, maxY, action), q.maxDepth)
 }
 
-// InsertEntities inserts any number of entities in to the quad-tree.
+// InsertEntities inserts any number of entities in the quad-tree.
 //
 // This will return an error if you do not give it any entities.
 func (q *QuadGo) InsertEntities(entities ...*Entity) error {
@@ -126,19 +127,19 @@ func (q *QuadGo) InsertEntities(entities ...*Entity) error {
 // Remove removes the given Entity from the quad-tree.
 //
 // The given entity has to be the exact same as the one you want to delete. This function
-// uses the Entities ID and a comparison with its Bounds to conferm that the found entity is
-// infact the entity to remove.
+// uses the Entities ID and a comparison with its Bounds to confirm that the found entity is
+// in fact the entity to remove.
 //
 // This will return an error if the entity given was not found in the quad-tree.
 func (q *QuadGo) Remove(entity *Entity) error {
 	return q.remove(entity)
 }
 
-// Retrieve returns all entites from all nodes the given bounds intersects with.
+// Retrieve returns all entities from all nodes the given bounds intersects with.
 // Retrieve excludes duplected entities.
 //
 // The return of this function is a <-channel of entities. This is due to
-// the fact that all reads are run concurently. If You want to just wait for this
+// the fact that all reads are run concurrently. If You want to just wait for this
 // function to return and block the hole time you can just call it with
 // `entities := <-quadgo.Retrieve(bound)`. This will block until values are returned
 // on the Entities chan.
@@ -164,14 +165,14 @@ func (q *QuadGo) Retrieve(bound Bound) <-chan Entities {
 // Action functions are not compared.
 //
 // The return of this function is a <-channel of bool. This is due to
-// the fact that all reads are run concurently. If You want to just wait for this
+// the fact that all reads are run concurrently. If You want to just wait for this
 // function to return and block the hole time you can just call it with
 // `is := <-quadgo.IsEntity(entity)`. This will block until a value is returned
 // on the chan.
 //
 // If you want to run IsEntity() and then do actions before retrieving the data from
 // the chan you can just save the chan with `out := quadgo.IsEntity(entity)`.
-// you can then later use Go's `is := <-out` to block till the value is returned from isEntity.
+// you can then later use Go's `is := <-out` to block until the value is returned from isEntity.
 func (q *QuadGo) IsEntity(entity *Entity) <-chan bool {
 	out := make(chan bool)
 
@@ -186,14 +187,14 @@ func (q *QuadGo) IsEntity(entity *Entity) <-chan bool {
 // IsIntersect take a bound and returns if that bound intersects any entity within the tree.
 //
 // The return of this function is a <-channel of bool. This is due to
-// the fact that all reads are run concurently. If You want to just wait for this
+// the fact that all reads are run concurrently. If You want to just wait for this
 // function to return and block the hole time you can just call it with
 // `is := <-quadgo.IsIntersect(bound)`. This will block until a value is returned
 // on the chan.
 //
 // If you want to run isIntersect and then do actions before retrieving the data from
 // the chan you can just save the chan with `out := quadgo.IsIntersect(bound)`.
-// you can then later use Go's `is := <-out` to block till the value is returned from isIntersect.
+// you can then later use Go's `is := <-out` to block until the value is returned from isIntersect.
 func (q *QuadGo) IsIntersect(bound Bound) <-chan bool {
 	out := make(chan bool)
 
@@ -209,14 +210,14 @@ func (q *QuadGo) IsIntersect(bound Bound) <-chan bool {
 // If no entities were found it will return an empty list of Entities.
 //
 // The return of this function is a <-channel of Entities. This is due to
-// the fact that all reads are run concurently. If You want to just wait for this
+// the fact that all reads are run concurrently. If You want to just wait for this
 // function to return and block the hole time you can just call it with
 // `entities := <-quadgo.Intersects(bound)`. This will block until entities are returned
 // on the chan.
 //
 // If you want to run intersects and then do actions before retrieving the data from
 // the chan you can just save the chan with `out := quadgo.Intersects(bound)`.
-// you can then later use Go's `entities := <-out` to block till the value is returned from intersects.
+// you can then later use Go's `entities := <-out` to block until the value is returned from intersects.
 func (q *QuadGo) Intersects(bound Bound) <-chan Entities {
 	out := make(chan Entities)
 
@@ -264,7 +265,12 @@ func (n *node) retrieve(bound Bound) (entities Entities) {
 
 		// recursive call to retrieve all entities from children nodes found from getQuadrent().
 		for i := range nodes {
-			entities = append(entities, nodes[i].retrieve(bound)...)
+			ents := nodes[i].retrieve(bound)
+			for i := range ents {
+				if !entities.Contains(ents[i]) {
+					entities = append(entities, ents[i])
+				}
+			}
 		}
 		return
 	}
