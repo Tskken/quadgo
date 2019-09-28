@@ -1,4 +1,4 @@
-# QuadGo [![GoDoc](https://godoc.org/github.com/Tskken/quadgo?status.svg)](https://godoc.org/github.com/Tskken/quadgo) ![Go Report Card](https://goreportcard.com/badge/github.com/Tskken/quadgo) [![Build Status](https://travis-ci.org/Tskken/QuadGo.svg?branch=master)](https://travis-ci.org/Tskken/QuadGo)
+# QuadGo [![GoDoc](https://godoc.org/github.com/Tskken/quadgo?status.svg)](https://godoc.org/github.com/Tskken/quadgo) ![Go Report Card](https://goreportcard.com/badge/github.com/Tskken/quadgo) [![Build Status](https://travis-ci.org/Tskken/quadgo.svg?branch=master)](https://travis-ci.org/Tskken/quadgo)
  
 QuadGO is a quad-tree implementation aimed at being used for video game collision detection.
 The main goal of this library is to create an easy to use and easily extendable quad-tree implementation in Golang. It also attempts to tackle concerincy for all read operations, making use of Go's channel structures.
